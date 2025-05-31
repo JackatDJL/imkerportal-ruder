@@ -4,7 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import ConvexClientProvider from "~/components/ConvexClientProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "~/components/PostHogProvider";
-import { dark } from "@clerk/themes";
+
 import env from "#env";
 import Footer from "~/components/footer";
 import { VercelToolbar } from "@vercel/toolbar/next";
@@ -94,12 +94,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${GeistSans.variable} antialiased`}>
-        <ClerkProvider
-          appearance={{
-            baseTheme: dark,
-          }}
-          dynamic
-        >
+        <ClerkProvider dynamic>
           <PostHogProvider>
             <ConvexClientProvider>
               <ThemeProvider
@@ -111,7 +106,7 @@ export default function RootLayout({
                 <Toaster />
                 <div className="flex min-h-screen flex-col bg-background text-foreground">
                   <Header />
-                  <main className="flex-grow">{children}</main>
+                  <main className="grow">{children}</main>
                   <Footer />
                 </div>
               </ThemeProvider>

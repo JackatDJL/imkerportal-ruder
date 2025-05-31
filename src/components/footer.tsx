@@ -9,7 +9,7 @@ export default function Footer() {
   const beta = process.env.NODE_ENV !== "production";
   return (
     <motion.footer
-      className="border-border from-primary/10 via-primary/5 to-secondary/10 border-t bg-gradient-to-r py-8 print:bg-white print:text-black"
+      className="border-border from-primary/10 via-primary/5 to-secondary/10 border-t bg-linear-to-r py-8 print:bg-white print:text-black"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.2 }}

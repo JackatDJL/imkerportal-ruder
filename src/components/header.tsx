@@ -5,33 +5,37 @@ import { ThemeToggle } from "./theme-toggle";
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "./ui/button";
 import Link from "next/link";
+import { dark } from "@clerk/themes";
+import { useTheme } from "next-themes";
 
 export default function Header() {
-  const userButtonAppearance = {
-    elements: {
-      userButtonAvatarBox: "w-10 h-10",
-    },
-  };
+  const theme = useTheme();
+  const theTheme = theme.theme !== "light" ? dark : undefined;
 
   return (
     <header className="border-b bg-background print:border-none">
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
-        <div className="flex items-center space-x-4">
-          <div className="relative h-10 w-10">
-            <Image
-              src="/logo.png"
-              alt="Imkereiportal Logo"
-              fill
-              className="object-contain"
-            />
+        <Link href="/" prefetch>
+          <div className="flex items-center space-x-4">
+            <div className="relative h-10 w-10">
+              <Image
+                src="/transparent-zoom.svg"
+                style={{
+                  transform: "scale(1.75)",
+                }}
+                alt="Imkereiportal Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <span className="text-xl font-semibold">
+              Imkereiportal Imkerei Ruder
+            </span>
+            <span className="hidden font-semibold print:block print:text-xl">
+              by DJL
+            </span>
           </div>
-          <span className="text-xl font-semibold">
-            Imkereiportal Imkerei Ruder
-          </span>
-          <span className="hidden font-semibold print:block print:text-xl">
-            by DJL
-          </span>
-        </div>
+        </Link>
 
         <div className="flex items-center space-x-4 print:hidden">
           <ThemeToggle />
@@ -45,7 +49,12 @@ export default function Header() {
             <SignedIn>
               <UserButton
                 showName
-                appearance={userButtonAppearance}
+                appearance={{
+                  baseTheme: theTheme,
+                  elements: {
+                    userButtonAvatarBox: "w-10 h-10",
+                  },
+                }}
                 userProfileMode="navigation"
                 userProfileUrl="/profile"
               />
