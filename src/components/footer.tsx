@@ -22,11 +22,13 @@ export default function Footer() {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <p className="text-muted-foreground font-medium print:text-black">
-              The DJL Foundation
+              Imkerportal Imkerei Ruder
             </p>
             <p className="text-muted-foreground text-sm print:text-black">
-              Supporting youth in robotics, computer science, and engineering
-              across Northern Germany.
+              Imkerportal is a project by Jack @ DJL Foundation.
+              <br />
+              Imkerportal is a platform for beekeepers to manage their hives,
+              families and colonies.
               <br />
               Building the future - together.
             </p>
@@ -103,7 +105,7 @@ export default function Footer() {
         </div>
 
         <motion.div
-          className="border-border/30 text-muted-foreground mt-6 border-t pt-6 text-center text-sm print:text-black"
+          className="mt-6 border-t border-border/30 pt-6 text-center text-sm text-muted-foreground print:text-black"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
@@ -113,13 +115,14 @@ export default function Footer() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35 }}
           >
-            <p className="text-muted-foreground pt-1 text-center text-sm print:text-black">
-              The DJL Foundation is an independent non-profit organization and
-              does not endorse any political activity.
+            <p className="pt-1 text-center text-sm text-muted-foreground print:text-black">
+              The DJL Foundation does not endorse any content hosted on this
+              platform.
             </p>
           </motion.div>
           <p>
-            © {new Date().getFullYear()} DJL Foundation. All rights reserved.
+            © {new Date().getFullYear()} By Jack @ DJL Foundation. All rights
+            reserved.
           </p>
         </motion.div>
       </div>
