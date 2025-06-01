@@ -27,7 +27,7 @@
     "paths": {
       "@/*": ["./*"],
       "~/*": ["./src/*"],
-      "#convex/*": ["./convex/_generated/*"],
+      "#convex/*": ["./src/server/convex/_generated/*"],
       "#env": ["./src/env.js"]
     }
   },

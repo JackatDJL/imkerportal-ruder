@@ -52,7 +52,10 @@ export default function Header() {
                 appearance={{
                   baseTheme: theTheme,
                   elements: {
-                    userButtonAvatarBox: "w-10 h-10",
+                    userButtonAvatarBox: {
+                      width: "2.5rem",
+                      height: "2.5rem",
+                    },
                   },
                 }}
                 userProfileMode="navigation"

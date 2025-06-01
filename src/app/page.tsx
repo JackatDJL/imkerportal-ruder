@@ -1,17 +1,16 @@
 "use client";
 
-import {
-  Authenticated,
-  Unauthenticated,
-  useMutation,
-  useQuery,
-} from "convex/react";
+import { Authenticated, useMutation, useQuery } from "convex/react";
 import { api } from "#convex/api";
 import Link from "next/link";
-import { SignUpButton } from "@clerk/nextjs";
-import { SignInButton } from "@clerk/nextjs";
+import { GoogleOneTap, SignedOut } from "@clerk/nextjs";
+import { useTheme } from "next-themes";
+import { dark } from "@clerk/themes";
 
 export default function Home() {
+  const theme = useTheme();
+  const theTheme = theme.theme !== "light" ? dark : undefined;
+
   return (
     <>
       <main className="p-8 flex flex-col gap-8">
@@ -21,21 +20,11 @@ export default function Home() {
         <Authenticated>
           <Content />
         </Authenticated>
-        <Unauthenticated>
-          <SignInForm />
-        </Unauthenticated>
+        <SignedOut>
+          <GoogleOneTap appearance={{ baseTheme: theTheme }} />
+        </SignedOut>
       </main>
     </>
-  );
-}
-
-function SignInForm() {
-  return (
-    <div className="flex flex-col gap-8 w-96 mx-auto">
-      <p>Log in to see the numbers</p>
-      <SignInButton />
-      <SignUpButton />
-    </div>
   );
 }
 
