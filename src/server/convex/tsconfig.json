@@ -22,8 +22,10 @@
     "paths": {
       "@/*": ["../../../*"],
       "~/*": ["../../*"],
-      "#convex/*": ["./*"],
+      "#convex/*": ["./_generated/*"],
       "#env": ["../../env.js"],
+      "#flags": ["../flags.ts"],
+      "#utility": ["../utility.ts"]
     }
   },
   "include": ["./**/*"],
