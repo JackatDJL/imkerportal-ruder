@@ -1,51 +1,29 @@
-# Welcome to your Convex + Next.js + Clerk app
+# The Hive Manager: Imkerei Ruder PoC
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+A Next.js web application for "Imkerei Ruder" to manage bee colonies (Völker), hive components (Zargen, etc.) using NFC tags, track inspections, treatments, and harvests. The core UI features a dynamic, interactive visual stack of hive components.
 
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+---
 
-- Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Next.js](https://nextjs.org/) for optimized web hosting and page routing
-- [Tailwind](https://tailwindcss.com/) for building great looking accessible UI
-- [Clerk](https://clerk.com/) for authentication
+## Project Overview
 
-## Get started
+"The Hive Manager" aims to digitize and streamline beekeeping records for Imkerei Ruder. This Proof of Concept will focus on a single apiary, providing a robust system for managing detailed records for each bee colony (Volk), including queen information, colony strength, and historical data.
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+A key innovation is the integration of **NFC tags** directly onto hive components (initially `Zargen`, with potential expansion to `Böden` and `Deckel`). Scanning an NFC tag with a smartphone will seamlessly navigate to a dedicated URL (e.g., `your-domain.de/view/z123`), displaying comprehensive information for that specific component.
 
-```
-npm install
-npm run dev
-```
+The user interface will prominently feature a **Visual Hive Stack**. This interactive SVG illustration, displayed on colony and component view pages, will visually represent the current physical configuration of a hive (Deckel, Zargen, Boden). Users can hover over a component to visually expand it, and clicking will navigate to its specific detail page (e.g., `/view/z123`). When viewing a component's page, the stack will highlight that component within the context of its parent colony. A clear link (e.g., `#f123`) above the stack will always provide quick navigation to the associated colony's main view.
 
-If you're reading this README on GitHub and want to use this template, run:
+Management views (e.g., `/manage/...`) will leverage a similar visual stack for intuitive component management, allowing for easy addition or removal of `Zargen` from a colony. The system will also support detailed logging for colony inspections, treatments/feeding, and honey harvests, complete with dedicated forms and historical views.
 
-```
-npm create convex@latest -- -t nextjs-clerk
-```
+This application will be built using **Next.js (App Router)**, **Shadcn/UI** for a modern component library, and **Framer Motion** (or Motion One) for smooth animations, ensuring a responsive and performant user experience. For this Proof of Concept, data will be structured based on provided schemas, primarily focusing on `Völker` (colonies), `Zargen` (supers), `Inspektionen` (inspections), `Behandlungen` (treatments), and `Ernten` (harvests).
 
-Then:
+---
 
-1. Open your app. There should be a "Claim your application" button from Clerk in the bottom right of your app.
-2. Follow the steps to claim your application and link it to this app.
-3. Follow step 3 in the [Convex Clerk onboarding guide](https://docs.convex.dev/auth/clerk#get-started) to create a Convex JWT template.
-4. Uncomment the Clerk provider in `convex/auth.config.ts`
-5. Paste the Issuer URL as `CLERK_JWT_ISSUER_DOMAIN` to your dev deployment environment variable settings on the Convex dashboard (see [docs](https://docs.convex.dev/auth/clerk#configuring-dev-and-prod-instances))
+## Enhancements & Considerations
 
-If you want to sync Clerk user data via webhooks, check out this [example repo](https://github.com/thomasballinger/convex-clerk-users-table/).
+1.  **NFC ID Scheme:** The proposed IDs like `f123` (Familie/Volk) and `z123` (Zarge) are effective. The application will differentiate entity types using the prefix character (`f` for colony, `z` for Zarge, `b` for Boden, `d` for Deckel). This allows for a streamlined `[id]` dynamic segment in routes.
 
-## Learn more
+2.  **Component Tracking (Deckel, Boden):** While `Zargenverwaltung` is detailed, for `Deckel` (roofs) and `Böden` (bottom boards) to be individually clickable in the stack and have their own pages (e.g., `/view/d456`), they will require their own (potentially simpler) data models and database tables. For the PoC, we will assume **Option B**, defining simple schemas for `Deckel` and `Boden` to allow unique IDs and basic tracked properties. This aligns best with the goal of a fully interactive visual hive stack, although `Zargen` will remain the primary focus for detailed data in the PoC.
 
-To learn more about developing your project with Convex, check out:
+3.  **Dashboard (`/`):** A central dashboard will provide an overview for Imkerei Ruder, featuring key statistics, upcoming tasks (e.g., next planned inspections), and quick summaries.
 
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
+4.  **Queen Birth Date:** The schema specifies "Geburtsjahr" (YYYY). While the UI can utilize a Shadcn datepicker for week.year selection, the stored data format should be consistent. Storing the full date (`YYYY-MM-DD`) offers greater flexibility for future calculations (e.g., queen age) and can still be displayed as "week.year" as needed. The provided Zod schema will be used for now.
