@@ -24,19 +24,22 @@ import { ArrowLeft, Save, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { useQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
 import posthog from "posthog-js";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "#convex/api";
 import type { Doc } from "#convex/dataModel";
+import { result } from "~/server/utility";
 
 export default function NewColony() {
   const router = useRouter();
 
-  const { data: genIdentifier, isPending: idLoading } = useQuery(
-    convexQuery(api.colonies.genNewColonyIdentifier, {}),
-  );
+  // const genIdentifier = result(useQuery(
+    // api.colonies.genNewColonyIdentifier
+  // )).deconstruct().content();
+  const genIdentifierQuery = useQuery(api.colonies.genNewColonyIdentifier);
+
+  const genIdentifier = result(genIdentifierQuery).deconstruct().content();
+
   const [formData, setFormData] = useState<
     typeof api.colonies.createColony._args
   >({
@@ -44,6 +47,7 @@ export default function NewColony() {
     hiveType: { type: "Deutsch Normalmaß (DNM)" },
     createdAt: new Date().toISOString().slice(0, 10),
   });
+
   useEffect(() => {
     if (genIdentifier) {
       setFormData((prev) => ({
@@ -51,6 +55,7 @@ export default function NewColony() {
         identifier: genIdentifier,
       }));
     }
+
   }, [genIdentifier]);
 
   const mutation = useMutation(api.colonies.createColony);
@@ -59,7 +64,7 @@ export default function NewColony() {
     e.preventDefault();
     posthog.capture("create-colony");
     void mutation(formData);
-    // router.push("/manage/dashboard");  // TODO: To Route
+    router.push("/colonies/" + formData.identifier);
   };
 
   return (
@@ -97,7 +102,7 @@ export default function NewColony() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    {idLoading ? (
+                    {!genIdentifierQuery ? (
                       <Skeleton className="h-12 w-full" />
                     ) : (
                       <div>

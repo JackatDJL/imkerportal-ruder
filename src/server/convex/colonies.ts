@@ -6,57 +6,67 @@ import {
 } from "#convex/server";
 import { z } from "zod";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
-import { type Doc } from "#convex/dataModel";
-import { type apiType, ok, err } from "~/server/utility";
+import { type Id, type Doc } from "#convex/dataModel";
+import { type apiObjectType, ok, err } from "~/server/utility";
 
 export const listColonies = query({
-  handler: async (ctx) => {
+  handler: async (ctx): apiObjectType<Doc<"colonies">[]> => {
     const colonies = await ctx.db.query("colonies").order("desc").collect();
-    return colonies;
+    return ok((s, t) => ({
+      status: s.Success,
+      type: t.Success,
+      data: colonies,
+    })).object();
   },
 });
 
 export const getColony = query({
   args: zodToConvex(
     z.object({
-      colonyId: zid("colony").optional(),
+      colonyId: zid("colonies").optional(),
       identifier: z.string().startsWith("f").min(2).optional(),
     }),
   ),
-  handler: async (ctx, args): apiType<Doc<"colonies">> => {
+  handler: async (ctx, args): apiObjectType<Doc<"colonies">> => {
     if (!args.colonyId && !args.identifier) {
-      return err()
-        .ValidationError()
-        .error("missing_colony_identifier")
-        .message("Either colonyId or identifier must be provided")
-        .build();
+      return err((s, t) => ({
+        status: s.ValidationError,
+        type: t.ValidationErrorUnknown,
+        error: "missing_colony_identifier",
+        message: "Either colonyId or identifier must be provided",
+      })).object();
     }
 
-    let colony;
+    let colony: Doc<"colonies"> | null = null;
     switch (args.colonyId ? "colonyId" : "identifier") {
       case "colonyId":
         colony = await ctx.db
           .query("colonies")
-          .filter((q) => q.eq("_id", args.colonyId!.toString()))
+          .filter((q) => q.eq(q.field("_id"), args.colonyId!.toString()))
           .first();
         break;
       case "identifier":
         colony = await ctx.db
           .query("colonies")
-          .filter((q) => q.eq("identifier", args.identifier))
+          .filter((q) => q.eq(q.field("identifier"), args.identifier))
           .first();
         break;
     }
+
     if (!colony) {
       return err((s, t) => ({
         status: s.NotFound,
         type: t.NotFound,
         error: "colony_not_found",
         message: `Colony with ID ${"colonyId" in args ? args.colonyId : args.identifier} not found`,
-      }));
+      })).object();
     }
 
-    return ok().Success().data(colony).build();
+    return ok((s, t) => ({
+      status: s.Success,
+      type: t.Success,
+      data: colony,
+    })).object();
   },
 });
 
@@ -80,8 +90,13 @@ async function generateColonyIdentifier(
 }
 
 export const genNewColonyIdentifier = query({
-  handler: async (ctx) => {
-    return generateColonyIdentifier(ctx);
+  handler: async (ctx): apiObjectType<string> => {
+    const identifier = await generateColonyIdentifier(ctx);
+    return ok((s, t) => ({
+      status: s.Success,
+      type: t.Success,
+      data: identifier,
+    })).object();
   },
 });
 
@@ -110,7 +125,7 @@ export const createColony = mutation({
       // .default(() => new Date().toISOString().slice(0, 10)), // YYYY-MM-DD format
     }),
   ),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): apiObjectType<Id<"colonies">> => {
     const colonies = await ctx.db.query("colonies").collect();
     let identifier: string;
     if (!args.identifier) {
@@ -118,7 +133,12 @@ export const createColony = mutation({
     } else {
       identifier = args.identifier;
       if (colonies.some((colony) => colony.identifier === identifier)) {
-        throw new Error(`Colony with identifier ${identifier} already exists`);
+        return err((s, t) => ({
+          status: s.Conflict,
+          type: t.ConflictDuplicate,
+          error: "colony_identifier_exists",
+          message: `Colony with identifier ${identifier} already exists`,
+        })).object();
       }
     }
 
@@ -129,6 +149,10 @@ export const createColony = mutation({
       createdAt: args.createdAt ?? new Date().toISOString().slice(0, 10),
     });
 
-    return newColony;
+    return ok((s, t) => ({
+      status: s.Success,
+      type: t.Success,
+      data: newColony,
+    })).object();
   },
 });

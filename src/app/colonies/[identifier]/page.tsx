@@ -16,8 +16,10 @@ export default async function ColonyPage({
 
   const colony = await preloadQuery(api.colonies.getColony, { identifier });
 
-  return CatchedColoniesClientPage({
-    colonyQuery: colony,
-    identifier,
-  });
+  return (
+    <CatchedColoniesClientPage
+      colonyQuery={colony}
+      identifier={identifier}
+    />
+  );
 }

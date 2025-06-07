@@ -22,12 +22,12 @@ export default function Footer() {
             transition={{ duration: 0.5, delay: 0.3 }}
           >
             <p className="text-muted-foreground font-medium print:text-black">
-              Imkerportal Imkerei Ruder
+              The Hive Manager - alias Imkerportal Imkerei Ruder
             </p>
             <p className="text-muted-foreground text-sm print:text-black">
-              Imkerportal is a project by Jack @ DJL Foundation.
+              The Hive Manager is a project by Jack @ DJL Foundation.
               <br />
-              Imkerportal is a platform for beekeepers to manage their hives,
+              The Hive Manager is a platform for beekeepers to manage their hives,
               families and colonies.
               <br />
               Building the future - together.

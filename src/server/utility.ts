@@ -1,8 +1,20 @@
 // NOTICE: Convex doesnt want it ;(
 
-import { type Err, err, type Ok, ok, type Result } from "neverthrow";
+import { err, ok, type Err, type Ok } from "neverthrow";
 import posthog from "posthog-js";
 import { z } from "zod";
+
+/**
+ * Im implementing another function / builder for making my neverthrow utilities compatible with Convex
+ * Convex internaly makes my return as a json stringified object (makes sense they are the backend) (wonder why trpc let me do that?)
+ * im thinking about just adding a _type: "ok", "err" and the data gets transfered like always through the types apiResponse<T> and apiError
+ * and adding a .api() or .object() method to make it "convertable" into json
+ * ill need to export a function that converts the apiObjectType<T> into apiType e.g. omits the _type and uses the neverthrow builders to create a Result Type
+ * smth like result() (jsdoc needed)
+ * maybe adding a createUseResult() exported function that i can like do smth like const useConvexQuery = createUseResult(useQuery(api.123.456)) that just runs result() on the query response
+ *
+ *
+ */
 
 // --- --- Utility Types --- ---
 
@@ -167,25 +179,50 @@ export type apiResponse<T> = {
 
 // --- Async Types ---
 
-/** Type alias for API response wrapped in Result type */
+// -- Result Types --
+
+/** Interface for API response wrapped in Result type */
 export type apiType<T> = Promise<
   Ok<apiResponse<T>, apiError> | Err<never, apiError>
 >;
 
-/** Type alias for API error response */
+/** Interface for API error response */
 export type apiErr<T> = Promise<Err<apiResponse<T>, apiError>>;
-/** Type alias for API response that can never be successful */
+
+/** Interface for API response that can never be successful */
 export type apiNeverOk = Promise<Err<never, apiError>>;
 
-/** Type alias for successful API response */
+/** Interface for successful API response */
 export type apiOk<T> = Promise<Ok<apiResponse<T>, apiError>>;
-/** Type alias for API response that can never fail */
+
+/** Interface for API response that can never fail */
 export type apiNeverFail<T> = Promise<Ok<apiResponse<T>, never>>;
+
+// -- ObjectResult Types --
+
+/** Interface for API response that is converted into an object and can be transerred via http */
+export type apiObjectType<T> = Promise<
+  (apiResponse<T> & { _type: "ok" }) | (apiError & { _type: "err" })
+>;
+
+/** Interface for API error response that is converted into an object and can be transerred via http */
+export type apiObjectErr = Promise<apiError & { _type: "err" }>;
+
+/** Interface for API response that can never be successful and is converted into an object */
+export type apiObjectNeverOk = apiObjectErr;
+
+/** Interface for successful API response that is converted into an object */
+export type apiObjectOk<T> = Promise<apiResponse<T> & { _type: "ok" }>;
+
+/** Interface for API response that can never fail and is converted into an object */
+export type apiObjectNeverFail<T> = Promise<apiResponse<T> & { _type: "ok" }>;
 
 // --- Synchronous Types ---
 
 /** Helper type to get the resolved type of a Promise */
 export type mkSync<T> = Awaited<T>;
+
+// -- Result Types --
 
 /** Synchronous version of apiType */
 export type syncType<T> = mkSync<apiType<T>>;
@@ -200,16 +237,165 @@ export type syncOk<T> = mkSync<apiOk<T>>;
 /** Synchronous version of apiNeverFail */
 export type syncNeverFail<T> = mkSync<apiNeverFail<T>>;
 
+// -- ObjectResult Types --
+
+/** Synchronous version of apiObjectType */
+export type syncObjectType<T> = mkSync<apiObjectType<T>>;
+
+/** Synchronous version of apiObjectErr */
+export type syncObjectErr = mkSync<apiObjectErr>;
+
+/** Synchronous version of apiObjectNeverOk */
+export type syncObjectNeverOk = mkSync<apiObjectNeverOk>;
+
+/** Synchronous version of apiObjectOk */
+export type syncObjectOk<T> = mkSync<apiObjectOk<T>>;
+
+/** Synchronous version of apiObjectNeverFail */
+export type syncObjectNeverFail<T> = mkSync<apiObjectNeverFail<T>>;
+
 // --- --- API Neverthrow Function Utilities --- ---
+
+// --- Object Conversion ---
+
+/** Converts an apiType<T> into an apiObjectType<T> */
+export function object<T>(input: syncType<T>): syncObjectType<T> {
+  if (input.isErr()) {
+    return {
+      ...input.error,
+      _type: "err",
+    };
+  }
+  return {
+    ...input.value,
+    _type: "ok",
+  };
+}
+
+/** Converts an apiObjectType<T> into an apiType<T> */
+function result(input: undefined): {
+  deconstruct(): {
+    content(): undefined;
+  };
+};
+function result<T>(input: syncObjectNeverFail<T>): syncNeverFail<T> & {
+  deconstruct(): apiResponse<T> & {
+    content(): T;
+  };
+};
+function result(input: syncObjectNeverOk): syncNeverOk & {
+  deconstruct(): apiError & {
+    content(): unknown;
+  };
+};
+function result<T>(
+  input: (apiError & { _type: "err" }) | (apiResponse<T> & { _type: "ok" })
+): 
+  | (syncNeverFail<T> & { deconstruct(): apiResponse<T> & { content(): T } })
+  | (syncNeverOk & { deconstruct(): apiError & { content(): unknown } });
+function result<T>(
+  input:
+    | undefined
+    | syncObjectNeverFail<T>
+    | syncObjectNeverOk
+    | (apiError & { _type: "err" })
+    | (apiResponse<T> & { _type: "ok" })
+):
+  | { deconstruct(): { content(): undefined } }
+  | (syncNeverFail<T> & { deconstruct(): apiResponse<T> & { content(): T } })
+  | (syncNeverOk & { deconstruct(): apiError & { content(): unknown } })
+{
+  if (input === undefined) {
+    const empty = err<never, apiError>({
+      status: apiErrorStatus.NotFound,
+      type: apiErrorTypes.NotFound,
+      message: "Not found",
+      error: null,
+      _internal: { reported: false, reportable: false },
+    });
+    return {
+      ...empty,
+      deconstruct: () => ({
+        ...empty.error,
+        content: () => undefined,
+      }),
+    } as typeof empty & {
+      deconstruct(): typeof empty.error & { content(): undefined };
+    };
+  }
+
+  if (input._type === "err") {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _type, ...error } = input;
+    const errorResult = err(error);
+    return {
+      ...errorResult,
+      deconstruct: () => ({
+        ...errorResult.error,
+        content: () => errorResult.error.error,
+      }),
+    } as typeof errorResult & {
+      deconstruct(): typeof errorResult.error & { content(): unknown };
+    };
+  }
+
+  if (input._type === "ok") {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _type, ...value } = input;
+    const okResult = ok(value as apiResponse<T>);
+    return {
+      ...okResult,
+      deconstruct: () => ({
+        ...okResult.value,
+        content: () => okResult.value.data as T,
+      }),
+    } as typeof okResult & {
+      deconstruct(): typeof okResult.value & { content(): T };
+    };
+  }
+
+  // fallback for type safety, should never be reached
+  const fallback = err<never, apiError>({
+    status: apiErrorStatus.Failed,
+    type: apiErrorTypes.FailedUnknown,
+    message: "Unknown error",
+    error: null,
+    _internal: { reported: false, reportable: true },
+  });
+  return {
+    ...fallback,
+    deconstruct: () => ({
+      ...fallback.error,
+      content: () => undefined,
+    }),
+  } as typeof fallback & {
+    deconstruct(): typeof fallback.error & { content(): undefined };
+  };
+}
+
+export { result };
 
 // --- Result Handling ---
 
-/** Deconstructs a Result type into its value or error */
+/** Deconstructs a Result type into its value or error
+ */
 export function deconstruct<T>(
-  input: Awaited<apiOk<T> | apiErr<T>>,
+  input: syncOk<T> | syncErr<T> | syncObjectOk<T> | syncObjectErr,
 ):
   | (apiResponse<T> & { content(): T })
   | (apiError & { content(): apiError["error"] }) {
+  if (isObjectResult(input)) {
+    if (input._type === "err") {
+      return {
+        ...input,
+        content: () => input.error,
+      };
+    }
+    return {
+      ...input,
+      content: () => input.data as T,
+    };
+  }
   if (input.isErr()) {
     return {
       ...input.error,
@@ -223,13 +409,33 @@ export function deconstruct<T>(
 }
 
 /** Passes back a Result type unchanged */
-export async function passBack<T>(
-  input: Awaited<apiOk<T> | apiErr<T>>,
-): apiType<T> {
+
+function passBack<T>(input: syncOk<T> | syncErr<T>): syncType<T>;
+function passBack<T>(input: syncObjectOk<T> | syncObjectErr): syncObjectType<T>;
+function passBack<T>(
+  input: (syncOk<T> | syncErr<T>) | (syncObjectOk<T> | syncObjectErr),
+): syncType<T> | syncObjectType<T> {
+  if (isObjectResult(input)) {
+    if (input._type === "err") {
+      return input;
+    }
+    return ok(input);
+  }
   if (input.isErr()) {
     return err(input.error);
   }
   return ok(input.value);
+}
+
+export { passBack };
+
+function isObjectResult<T>(
+  input: (syncOk<T> | syncErr<T>) | (syncObjectOk<T> | syncObjectErr),
+): input is syncObjectOk<T> | syncObjectErr {
+  return (
+    (input as syncObjectOk<T>)._type === "ok" ||
+    (input as syncObjectErr)._type === "err"
+  );
 }
 
 // --- Reporting ---
@@ -374,8 +580,8 @@ type OkInitialChain<T> = {
 type OkStatusChain<T, Status extends apiResponseStatus> = {
   message(msg: string): OkStatusChain<T, Status>;
   data<U>(data: U): OkStatusChain<U, Status>;
-  build(): Awaited<apiOk<T>>; // Always include build on the status chain
-} & FilteredOkTypeMethods<T, Status>; // Add filtered type methods
+  build(): OkBuildChain<T>;
+} & FilteredOkTypeMethods<T, Status>;
 
 /** Helper type for the final chain of a successful response builder */
 interface OkFinalizeChain<
@@ -385,7 +591,11 @@ interface OkFinalizeChain<
 > {
   message(msg: string): OkFinalizeChain<T, Status, Type>;
   data<U>(data: U): OkFinalizeChain<U, Status, Type>;
-  build(): Awaited<apiOk<T>>;
+  build(): OkBuildChain<T>;
+}
+
+interface OkBuildChain<T> extends syncOk<T> {
+  object(): syncObjectOk<T>;
 }
 
 // -- Input Types --
@@ -515,12 +725,7 @@ class OkBuilder<T> {
     return this as unknown as OkStatusChain<T, Status>;
   }
 
-  build(): Awaited<apiOk<T>> {
-    if (this.inputType !== "chain") {
-      // This will result in a TypeScript error
-      console.error("Cannot call build() on non-chain input");
-    }
-
+  build(): OkBuildChain<T> {
     const response: apiResponse<T> = {
       status: this.status ?? apiResponseStatus.Inconsequential, // Default status if not set
       type: this.type,
@@ -532,7 +737,12 @@ class OkBuilder<T> {
     // Report the response before returning
     const reportedResponse = reportResponse(response);
 
-    return ok(reportedResponse);
+    return {
+      ...ok(reportedResponse),
+      object: () => {
+        return object(ok(reportedResponse));
+      },
+    } as OkBuildChain<T>;
   }
 }
 
@@ -558,7 +768,7 @@ type ErrInitialChain = {
 type ErrStatusChain<Status extends apiErrorStatus> = {
   message(msg: string): ErrStatusChain<Status>;
   error(err: unknown): ErrStatusChain<Status>;
-  build(): syncNeverOk;
+  build(): ErrBuildChain;
 } & FilteredErrTypeMethods<Status>;
 
 /** Helper type for the final chain of an error response builder */
@@ -568,7 +778,11 @@ interface ErrFinalizeChain<
 > {
   message(msg: string): ErrFinalizeChain<Status, Type>;
   error(err: unknown): ErrFinalizeChain<Status, Type>;
-  build(): syncNeverOk;
+  build(): ErrBuildChain;
+}
+
+interface ErrBuildChain extends syncNeverOk {
+  object(): syncObjectNeverOk;
 }
 
 // -- Input Types --
@@ -697,11 +911,7 @@ class ErrBuilder {
     }
   }
 
-  build(): syncNeverOk {
-    if (this.inputType !== "chain") {
-      console.error("Cannot call build() on non-chain input");
-    }
-
+  build(): ErrBuildChain {
     const response: apiError = {
       status: this.status ?? apiErrorStatus.Failed,
       type: this.type ?? apiErrorTypes.FailedUnknown,
@@ -714,7 +924,12 @@ class ErrBuilder {
 
     const errorResult = err(reportedError);
 
-    return errorResult as syncNeverOk;
+    return {
+      ...errorResult,
+      object: () => {
+        return object(errorResult);
+      },
+    } as ErrBuildChain;
   }
 }
 
@@ -725,7 +940,7 @@ function constructInternal<T>() {
   return {
     ok: (
       input?: OkFunctionInput<T> | OkObjectInput<T>,
-    ): Result<apiResponse<T>, apiError> | OkInitialChain<T> => {
+    ): OkBuildChain<T> | OkInitialChain<T> => {
       const builder = new OkBuilder<T>(input);
       if (
         typeof input === "function" ||
@@ -749,7 +964,7 @@ function constructInternal<T>() {
     },
     err: (
       input?: ErrFunctionInput | ErrObjectInput,
-    ): syncNeverOk | ErrInitialChain => {
+    ): ErrBuildChain | ErrInitialChain => {
       const builder = new ErrBuilder(input);
       if (
         typeof input === "function" ||
@@ -778,11 +993,11 @@ function constructInternal<T>() {
 
 /** Utility function to create neverthrow objects with api type */
 function okAlias<T>(): OkInitialChain<T>;
-function okAlias<T>(input: OkFunctionInput<T>): syncType<T>;
-function okAlias<T>(input: OkObjectInput<T>): syncType<T>;
+function okAlias<T>(input: OkFunctionInput<T>): OkBuildChain<T>;
+function okAlias<T>(input: OkObjectInput<T>): OkBuildChain<T>;
 function okAlias<T>(
   input?: OkFunctionInput<T> | OkObjectInput<T>,
-): syncType<T> | OkInitialChain<T> {
+): OkBuildChain<T> | OkInitialChain<T> {
   if (
     typeof input === "function" ||
     (typeof input === "object" && input !== undefined)
@@ -795,11 +1010,11 @@ function okAlias<T>(
 
 /** Utility function to create neverthrow objects with api type */
 function errAlias(): ErrInitialChain;
-function errAlias(input: ErrFunctionInput): syncNeverOk;
-function errAlias(input: ErrObjectInput): syncNeverOk;
+function errAlias(input: ErrFunctionInput): ErrBuildChain;
+function errAlias(input: ErrObjectInput): ErrBuildChain;
 function errAlias(
   input?: ErrFunctionInput | ErrObjectInput,
-): syncNeverOk | ErrInitialChain {
+): ErrBuildChain | ErrInitialChain {
   if (
     typeof input === "function" ||
     (typeof input === "object" && input !== undefined)
