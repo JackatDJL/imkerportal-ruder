@@ -13,7 +13,7 @@ export default function Header() {
   const theTheme = theme.theme !== "light" ? dark : undefined;
 
   return (
-    <header className="border-b bg-background print:border-none">
+    <header className="bg-background border-b print:border-none">
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
         <Link href="/" prefetch>
           <div className="flex items-center space-x-4">

@@ -22,7 +22,7 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import { ArrowLeft, Save, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useTransition, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { useQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
@@ -33,7 +33,6 @@ import type { Doc } from "#convex/dataModel";
 
 export default function NewColony() {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
   const { data: genIdentifier, isPending: idLoading } = useQuery(
     convexQuery(api.colonies.genNewColonyIdentifier, {}),
@@ -47,12 +46,10 @@ export default function NewColony() {
   });
   useEffect(() => {
     if (genIdentifier) {
-      startTransition(() => {
-        setFormData((prev) => ({
-          ...prev,
-          identifier: genIdentifier,
-        }));
-      });
+      setFormData((prev) => ({
+        ...prev,
+        identifier: genIdentifier,
+      }));
     }
   }, [genIdentifier]);
 
@@ -61,20 +58,20 @@ export default function NewColony() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     posthog.capture("create-colony");
-    mutation(formData);
+    void mutation(formData);
     // router.push("/manage/dashboard");  // TODO: To Route
   };
 
   return (
     <div className="flex-1 space-y-6 p-6">
-      <div className="relative flex items-center justify-center mb-6">
+      <div className="relative mb-6 flex items-center justify-center">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => router.back()}
           className="absolute left-0"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Zurück
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Neues Bienenvolk</h1>
@@ -82,8 +79,8 @@ export default function NewColony() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Form Content */}
-        <div className="flex items-center justify-center grow">
-          <div className="grid gap-6 w-3/4">
+        <div className="flex grow items-center justify-center">
+          <div className="grid w-3/4 gap-6">
             {/* Basic Information */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -138,7 +135,7 @@ export default function NewColony() {
                     </Label>
                     <Select
                       defaultValue={
-                        formData.hiveType?.type || "Deutsch Normalmaß (DNM)"
+                        formData.hiveType?.type ?? "Deutsch Normalmaß (DNM)"
                       }
                       value={formData.hiveType?.type}
                       onValueChange={(value) =>
@@ -203,7 +200,7 @@ export default function NewColony() {
             Abbrechen
           </Button>
           <Button type="submit">
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="mr-2 h-4 w-4" />
             Volk erstellen
           </Button>
         </div>

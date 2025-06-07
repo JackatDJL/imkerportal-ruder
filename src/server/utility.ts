@@ -373,7 +373,7 @@ type OkInitialChain<T> = {
 /** Helper type for the status chain of a successful response builder */
 type OkStatusChain<T, Status extends apiResponseStatus> = {
   message(msg: string): OkStatusChain<T, Status>;
-  data(data: T): OkStatusChain<T, Status>;
+  data<U>(data: U): OkStatusChain<U, Status>;
   build(): Awaited<apiOk<T>>; // Always include build on the status chain
 } & FilteredOkTypeMethods<T, Status>; // Add filtered type methods
 
@@ -384,7 +384,7 @@ interface OkFinalizeChain<
   Type extends apiResponseTypes,
 > {
   message(msg: string): OkFinalizeChain<T, Status, Type>;
-  data(data: T): OkFinalizeChain<T, Status, Type>;
+  data<U>(data: U): OkFinalizeChain<U, Status, Type>;
   build(): Awaited<apiOk<T>>;
 }
 

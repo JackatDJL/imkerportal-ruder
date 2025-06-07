@@ -218,7 +218,7 @@ const hiveComponentTypes = z.discriminatedUnion("type", [
     ),
   z
     .object({
-      identifier: z.string().startsWith("f"),
+      identifier: z.string().startsWith("fd"),
       type: z.literal("Futterraum"),
       _internal: z.object({
         virtualPosition: z.object({
@@ -349,9 +349,7 @@ export default defineSchema({
         notes: z.string().optional(),
       }),
     ),
-  )
-    .index("by_identifier", ["identifier"])
-    .index("by_location", ["location"]),
+  ).index("by_identifier", ["identifier"]),
 
   // II. Völkerdurchsicht (Colony Inspection)
   colonyInspections: defineTable(

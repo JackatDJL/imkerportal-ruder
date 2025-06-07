@@ -105,7 +105,7 @@ export default function Footer() {
         </div>
 
         <motion.div
-          className="mt-6 border-t border-border/30 pt-6 text-center text-sm text-muted-foreground print:text-black"
+          className="border-border/30 text-muted-foreground mt-6 border-t pt-6 text-center text-sm print:text-black"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
@@ -115,7 +115,7 @@ export default function Footer() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35 }}
           >
-            <p className="pt-1 text-center text-sm text-muted-foreground print:text-black">
+            <p className="text-muted-foreground pt-1 text-center text-sm print:text-black">
               The DJL Foundation does not endorse any content hosted on this
               platform.
             </p>

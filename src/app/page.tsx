@@ -13,8 +13,8 @@ export default function Home() {
 
   return (
     <>
-      <main className="p-8 flex flex-col gap-8">
-        <h1 className="text-4xl font-bold text-center">
+      <main className="flex flex-col gap-8 p-8">
+        <h1 className="text-center text-4xl font-bold">
           Convex + Next.js + Clerk
         </h1>
         <Authenticated>
@@ -132,7 +132,7 @@ function ResourceCard({
   href: string;
 }) {
   return (
-    <div className="flex flex-col gap-2 bg-slate-200 dark:bg-slate-800 p-4 rounded-md h-28 overflow-auto">
+    <div className="flex h-28 flex-col gap-2 overflow-auto rounded-md bg-slate-200 p-4 dark:bg-slate-800">
       <a href={href} className="text-sm underline hover:no-underline">
         {title}
       </a>

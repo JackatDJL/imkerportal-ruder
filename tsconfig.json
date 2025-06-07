@@ -30,7 +30,7 @@
       "#convex/*": ["./src/server/convex/_generated/*"],
       "#env": ["./src/env.js"],
       "#flags": ["./src/server/flags.ts"],
-      "#utility": ["./src/server/utility.ts"],
+      "#utility": ["./src/server/utility.ts"]
     }
   },
   "include": [

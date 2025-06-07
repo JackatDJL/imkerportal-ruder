@@ -1,7 +1,13 @@
-import { mutation, MutationCtx, query, QueryCtx } from "#convex/server";
+import {
+  mutation,
+  type MutationCtx,
+  query,
+  type QueryCtx,
+} from "#convex/server";
 import { z } from "zod";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
-import { DataModel, Doc } from "#convex/dataModel";
+import { type Doc } from "#convex/dataModel";
+import { type apiType, ok, err } from "~/server/utility";
 
 export const listColonies = query({
   handler: async (ctx) => {
@@ -17,9 +23,13 @@ export const getColony = query({
       identifier: z.string().startsWith("f").min(2).optional(),
     }),
   ),
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): apiType<Doc<"colonies">> => {
     if (!args.colonyId && !args.identifier) {
-      throw new Error("Either colonyId or identifier must be provided");
+      return err()
+        .ValidationError()
+        .error("missing_colony_identifier")
+        .message("Either colonyId or identifier must be provided")
+        .build();
     }
 
     let colony;
@@ -34,17 +44,19 @@ export const getColony = query({
         colony = await ctx.db
           .query("colonies")
           .filter((q) => q.eq("identifier", args.identifier))
-          .withIndex("by_identifier")
           .first();
         break;
     }
     if (!colony) {
-      throw new Error(
-        `Colony with ID ${"colonyId" in args ? args.colonyId : args.identifier} not found`,
-      );
+      return err((s, t) => ({
+        status: s.NotFound,
+        type: t.NotFound,
+        error: "colony_not_found",
+        message: `Colony with ID ${"colonyId" in args ? args.colonyId : args.identifier} not found`,
+      }));
     }
 
-    return colony;
+    return ok().Success().data(colony).build();
   },
 });
 
@@ -53,9 +65,7 @@ async function generateColonyIdentifier(
   prefetchedQuery?: Doc<"colonies">[],
 ) {
   let query = prefetchedQuery;
-  if (!query) {
-    query = await ctx.db.query("colonies").collect();
-  }
+  query ??= await ctx.db.query("colonies").collect();
   const identifiers = query.map((colony) => colony.identifier);
   let identifier: string;
   let i = 1;
