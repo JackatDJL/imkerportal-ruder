@@ -285,92 +285,127 @@ function result<T>(input: syncObjectNeverFail<T>): syncNeverFail<T> & {
 };
 function result(input: syncObjectNeverOk): syncNeverOk & {
   deconstruct(): apiError & {
-    content(): unknown;
+    content(): undefined; // Changed unknown to undefined
+  };
+};
+function result(input: undefined | null): syncNeverOk & {
+  deconstruct(): apiError & {
+    content(): undefined;
   };
 };
 function result<T>(
-  input: (apiError & { _type: "err" }) | (apiResponse<T> & { _type: "ok" })
-): 
+  input: (apiError & { _type: "err" }) | (apiResponse<T> & { _type: "ok" }),
+):
   | (syncNeverFail<T> & { deconstruct(): apiResponse<T> & { content(): T } })
-  | (syncNeverOk & { deconstruct(): apiError & { content(): unknown } });
+  | (syncNeverOk & { deconstruct(): apiError & { content(): undefined } }); // Changed unknown to undefined
 function result<T>(
   input:
     | undefined
+    | (apiError & { _type: "err" })
+    | (apiResponse<T> & { _type: "ok" }),
+):
+  | (syncNeverFail<T> & { deconstruct(): apiResponse<T> & { content(): T } })
+  | (syncNeverOk & { deconstruct(): apiError & { content(): undefined } });
+function result<T>(
+  input:
+    | undefined
+    | null
     | syncObjectNeverFail<T>
     | syncObjectNeverOk
     | (apiError & { _type: "err" })
-    | (apiResponse<T> & { _type: "ok" })
+    | (apiResponse<T> & { _type: "ok" }),
 ):
-  | { deconstruct(): { content(): undefined } }
-  | (syncNeverFail<T> & { deconstruct(): apiResponse<T> & { content(): T } })
-  | (syncNeverOk & { deconstruct(): apiError & { content(): unknown } })
+  // The return type should consistently be a neverthrow object + deconstruct
+  // (syncNeverFail<T> is Ok<apiResponse<T>, never>)
+  // (syncNeverOk is Err<never, apiError>)
+  | (Ok<apiResponse<T>, never> & { deconstruct: () => apiResponse<T> & { content(): T } })
+  | (Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } })
 {
-  if (input === undefined) {
-    const empty = err<never, apiError>({
+  if (input === undefined || input === null) {
+    const baseResult = err<never, apiError>({
       status: apiErrorStatus.NotFound,
       type: apiErrorTypes.NotFound,
       message: "Not found",
       error: null,
       _internal: { reported: false, reportable: false },
     });
-    return {
-      ...empty,
-      deconstruct: () => ({
-        ...empty.error,
+    // Attach deconstruct to the actual neverthrow Err instance
+    const finalResult = baseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+    finalResult.deconstruct = () => {
+      return {
+        ...baseResult.error, // Spread properties of the apiError object
         content: () => undefined,
-      }),
-    } as typeof empty & {
-      deconstruct(): typeof empty.error & { content(): undefined };
+      };
     };
+    return finalResult;
+  }
+
+  // Handles inputs that are not undefined/null AND DO NOT have _type.
+  // This is for unexpected structures if specific overloads for them don't exist or aren't matched.
+  if (!("_type" in input)) {
+    const baseResult = err<never, apiError>({
+      status: apiErrorStatus.BadRequest,
+      type: apiErrorTypes.BadRequestUnknown,
+      message: "Invalid input: _type property missing and not undefined/null",
+      error: null,
+      _internal: { reported: false, reportable: false },
+    });
+    const finalResult = baseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+    finalResult.deconstruct = () => {
+      return {
+        ...baseResult.error,
+        content: () => undefined,
+      };
+    };
+    return finalResult;
   }
 
   if (input._type === "err") {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { _type, ...error } = input;
-    const errorResult = err(error);
-    return {
-      ...errorResult,
-      deconstruct: () => ({
-        ...errorResult.error,
-        content: () => errorResult.error.error,
-      }),
-    } as typeof errorResult & {
-      deconstruct(): typeof errorResult.error & { content(): unknown };
+    const { _type, ...errorData } = input; // errorData is of type apiError
+    const baseResult = err(errorData);
+    // Attach deconstruct
+    const finalResult = baseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+    finalResult.deconstruct = () => {
+      return {
+        ...baseResult.error, // errorData is baseResult.error
+        content: () => undefined,
+      };
     };
+    return finalResult;
   }
 
   if (input._type === "ok") {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { _type, ...value } = input;
-    const okResult = ok(value as apiResponse<T>);
-    return {
-      ...okResult,
-      deconstruct: () => ({
-        ...okResult.value,
-        content: () => okResult.value.data as T,
-      }),
-    } as typeof okResult & {
-      deconstruct(): typeof okResult.value & { content(): T };
+    const { _type, ...valueData } = input; // valueData is apiResponse<T>
+    const baseResult = ok(valueData as apiResponse<T>);
+    // Attach deconstruct
+    const finalResult = baseResult as Ok<apiResponse<T>, never> & { deconstruct: () => apiResponse<T> & { content(): T } };
+    finalResult.deconstruct = () => {
+      return {
+        ...baseResult.value, // valueData is baseResult.value
+        content: () => baseResult.value.data as T,
+      };
     };
+    return finalResult;
   }
 
-  // fallback for type safety, should never be reached
-  const fallback = err<never, apiError>({
+  // Fallback for type safety - should ideally not be reached if all inputs are covered.
+  const fallbackBaseResult = err<never, apiError>({
     status: apiErrorStatus.Failed,
     type: apiErrorTypes.FailedUnknown,
-    message: "Unknown error",
+    message: "Unknown error or unhandled input type in result function",
     error: null,
     _internal: { reported: false, reportable: true },
   });
-  return {
-    ...fallback,
-    deconstruct: () => ({
-      ...fallback.error,
+  const finalFallbackResult = fallbackBaseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+  finalFallbackResult.deconstruct = () => {
+    return {
+      ...fallbackBaseResult.error,
       content: () => undefined,
-    }),
-  } as typeof fallback & {
-    deconstruct(): typeof fallback.error & { content(): undefined };
+    };
   };
+  return finalFallbackResult;
 }
 
 export { result };
