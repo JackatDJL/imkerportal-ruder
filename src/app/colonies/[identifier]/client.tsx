@@ -4,6 +4,8 @@ import { type api } from "#convex/api";
 import { deconstruct, result } from "~/server/utility";
 import { notFound } from "next/navigation";
 import posthog from "posthog-js";
+import { Card } from "~/components/ui/card";
+import VisualHiveStack from "@/src/components/hive-stack";
 
 export function CatchedColoniesClientPage(props: {
   colonyQuery: Preloaded<typeof api.colonies.getColony>;
@@ -25,10 +27,16 @@ export function CatchedColoniesClientPage(props: {
 
   const colony = deconstruct(colonyApi);
 
-  return <p>{JSON.stringify(colony)}</p>;
-  // return (
-  //   <p>
-  //     data
-  //   </p>
-  // )
+  const data = colonyApi.value.data;
+
+  return (
+    <div className="w-[90%] mx-auto flex gap-4 p-4">
+      <div className="w-[30%]">
+        {data && <VisualHiveStack colony={data} components={[]} />}
+      </div>
+      <Card className="flex-1 p-4">
+        <pre>{JSON.stringify(colony, null, 2)}</pre>
+      </Card>
+    </div>
+  );
 }
