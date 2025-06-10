@@ -33,15 +33,12 @@ import { result } from "~/server/utility";
 export default function NewColony() {
   const router = useRouter();
 
-  // const genIdentifier = result(useQuery(
-    // api.colonies.genNewColonyIdentifier
-  // )).deconstruct().content();
-  const genIdentifierQuery = useQuery(api.colonies.genNewColonyIdentifier);
+  const genIdentifierQuery = useQuery(api.hive.colonies.generateColonyIdentifier, {});
 
   const genIdentifier = result(genIdentifierQuery).deconstruct().content();
 
   const [formData, setFormData] = useState<
-    typeof api.colonies.createColony._args
+    typeof api.hive.colonies.createColony._args
   >({
     identifier: "f...",
     hiveType: { type: "Deutsch Normalmaß (DNM)" },
@@ -55,10 +52,9 @@ export default function NewColony() {
         identifier: genIdentifier,
       }));
     }
-
   }, [genIdentifier]);
 
-  const mutation = useMutation(api.colonies.createColony);
+  const mutation = useMutation(api.hive.colonies.createColony);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

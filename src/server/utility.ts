@@ -314,13 +314,15 @@ function result<T>(
     | syncObjectNeverOk
     | (apiError & { _type: "err" })
     | (apiResponse<T> & { _type: "ok" }),
-):
-  // The return type should consistently be a neverthrow object + deconstruct
-  // (syncNeverFail<T> is Ok<apiResponse<T>, never>)
-  // (syncNeverOk is Err<never, apiError>)
-  | (Ok<apiResponse<T>, never> & { deconstruct: () => apiResponse<T> & { content(): T } })
-  | (Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } })
-{
+): // The return type should consistently be a neverthrow object + deconstruct
+// (syncNeverFail<T> is Ok<apiResponse<T>, never>)
+// (syncNeverOk is Err<never, apiError>)
+| (Ok<apiResponse<T>, never> & {
+      deconstruct: () => apiResponse<T> & { content(): T };
+    })
+  | (Err<never, apiError> & {
+      deconstruct: () => apiError & { content(): undefined };
+    }) {
   if (input === undefined || input === null) {
     const baseResult = err<never, apiError>({
       status: apiErrorStatus.NotFound,
@@ -330,7 +332,9 @@ function result<T>(
       _internal: { reported: false, reportable: false },
     });
     // Attach deconstruct to the actual neverthrow Err instance
-    const finalResult = baseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+    const finalResult = baseResult as Err<never, apiError> & {
+      deconstruct: () => apiError & { content(): undefined };
+    };
     finalResult.deconstruct = () => {
       return {
         ...baseResult.error, // Spread properties of the apiError object
@@ -350,7 +354,9 @@ function result<T>(
       error: null,
       _internal: { reported: false, reportable: false },
     });
-    const finalResult = baseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+    const finalResult = baseResult as Err<never, apiError> & {
+      deconstruct: () => apiError & { content(): undefined };
+    };
     finalResult.deconstruct = () => {
       return {
         ...baseResult.error,
@@ -365,7 +371,9 @@ function result<T>(
     const { _type, ...errorData } = input; // errorData is of type apiError
     const baseResult = err(errorData);
     // Attach deconstruct
-    const finalResult = baseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+    const finalResult = baseResult as Err<never, apiError> & {
+      deconstruct: () => apiError & { content(): undefined };
+    };
     finalResult.deconstruct = () => {
       return {
         ...baseResult.error, // errorData is baseResult.error
@@ -380,7 +388,9 @@ function result<T>(
     const { _type, ...valueData } = input; // valueData is apiResponse<T>
     const baseResult = ok(valueData as apiResponse<T>);
     // Attach deconstruct
-    const finalResult = baseResult as Ok<apiResponse<T>, never> & { deconstruct: () => apiResponse<T> & { content(): T } };
+    const finalResult = baseResult as Ok<apiResponse<T>, never> & {
+      deconstruct: () => apiResponse<T> & { content(): T };
+    };
     finalResult.deconstruct = () => {
       return {
         ...baseResult.value, // valueData is baseResult.value
@@ -398,7 +408,9 @@ function result<T>(
     error: null,
     _internal: { reported: false, reportable: true },
   });
-  const finalFallbackResult = fallbackBaseResult as Err<never, apiError> & { deconstruct: () => apiError & { content(): undefined } };
+  const finalFallbackResult = fallbackBaseResult as Err<never, apiError> & {
+    deconstruct: () => apiError & { content(): undefined };
+  };
   finalFallbackResult.deconstruct = () => {
     return {
       ...fallbackBaseResult.error,

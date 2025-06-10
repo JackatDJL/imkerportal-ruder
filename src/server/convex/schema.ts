@@ -124,7 +124,7 @@ const hiveComponentBaseType = z.object({
 });
 
 const hiveComponentDataTypes = z.object({
-  asignedColony: zid("colonies"), // Foreign key to colonies table
+  asignedColony: zid("colonies").optional(), // Foreign key to colonies table
   // The usability and optionality of entries should be omited below (hiveComponentDataTypes)
   frameSize: z.union([
     z.literal("Zander"),

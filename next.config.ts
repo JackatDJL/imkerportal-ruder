@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     useCache: true,
-    // ppr: true,
+    ppr: true,
   },
 };
 

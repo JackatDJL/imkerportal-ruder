@@ -14,12 +14,9 @@ export default async function ColonyPage({
     redirect(`/${identifier}`);
   }
 
-  const colony = await preloadQuery(api.colonies.getColony, { identifier });
+  const colony = await preloadQuery(api.hive.colonies.getColony, { identifier });
 
   return (
-    <CatchedColoniesClientPage
-      colonyQuery={colony}
-      identifier={identifier}
-    />
+    <CatchedColoniesClientPage colonyQuery={colony} identifier={identifier} />
   );
 }

@@ -104,7 +104,7 @@ export default function RootLayout({
                 disableTransitionOnChange
               >
                 <Toaster />
-                <div className="bg-background text-foreground flex min-h-screen flex-col">
+                <div className="flex min-h-screen flex-col bg-background text-foreground">
                   <Header />
                   <main className="grow">{children}</main>
                   <Footer />

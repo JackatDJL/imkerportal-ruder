@@ -13,7 +13,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as colonies from "../colonies.js";
+import type * as hive_colonies from "../hive/colonies.js";
+import type * as hive_components from "../hive/components.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -24,7 +25,8 @@ import type * as colonies from "../colonies.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
-  colonies: typeof colonies;
+  "hive/colonies": typeof hive_colonies;
+  "hive/components": typeof hive_components;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

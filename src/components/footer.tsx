@@ -9,7 +9,7 @@ export default function Footer() {
   const beta = process.env.NODE_ENV !== "production";
   return (
     <motion.footer
-      className="border-border from-primary/10 via-primary/5 to-secondary/10 border-t bg-linear-to-r py-8 print:bg-white print:text-black"
+      className="border-t border-border bg-linear-to-r from-primary/10 via-primary/5 to-secondary/10 py-8 print:bg-white print:text-black"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5, delay: 0.2 }}
@@ -21,14 +21,14 @@ export default function Footer() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <p className="text-muted-foreground font-medium print:text-black">
+            <p className="font-medium text-muted-foreground print:text-black">
               The Hive Manager - alias Imkerportal Imkerei Ruder
             </p>
-            <p className="text-muted-foreground text-sm print:text-black">
+            <p className="text-sm text-muted-foreground print:text-black">
               The Hive Manager is a project by Jack @ DJL Foundation.
               <br />
-              The Hive Manager is a platform for beekeepers to manage their hives,
-              families and colonies.
+              The Hive Manager is a platform for beekeepers to manage their
+              hives, families and colonies.
               <br />
               Building the future - together.
             </p>
@@ -58,7 +58,7 @@ export default function Footer() {
             <Link
               href="/terms"
               prefetch
-              className="text-muted-foreground hover:text-primary transition-colors print:hidden"
+              className="text-muted-foreground transition-colors hover:text-primary print:hidden"
             >
               <Navigation className="h-5 w-5" />
               <span className="sr-only">Terms</span>
@@ -66,21 +66,21 @@ export default function Footer() {
             <Link
               href="/privacy"
               prefetch
-              className="text-muted-foreground hover:text-primary transition-colors print:hidden"
+              className="text-muted-foreground transition-colors hover:text-primary print:hidden"
             >
               <Shield className="h-5 w-5" />
               <span className="sr-only">Privacy</span>
             </Link>
             <Link
               href="https://github.com/djl-foundation"
-              className="text-muted-foreground hover:text-primary transition-colors print:hidden"
+              className="text-muted-foreground transition-colors hover:text-primary print:hidden"
             >
               <GitHub className="h-5 w-5" />
               <span className="sr-only">GitHub</span>
             </Link>
             <Link
               href="mailto:contact@djl.foundation"
-              className="text-muted-foreground hover:text-primary transition-colors print:hidden"
+              className="text-muted-foreground transition-colors hover:text-primary print:hidden"
             >
               <Mail className="h-5 w-5" />
               <span className="sr-only">Email</span>
@@ -89,14 +89,14 @@ export default function Footer() {
             {/* Print-only links with text */}
             <Link
               href="https://github.com/djl-foundation"
-              className="hover:text-primary hidden transition-colors print:block print:text-blue-700 print:no-underline"
+              className="hidden transition-colors hover:text-primary print:block print:text-blue-700 print:no-underline"
             >
               <GitHub className="inline-block h-5 w-5" />
               <span className="ml-1">@djl-foundation</span>
             </Link>
             <Link
               href="mailto:contact@djl.foundation"
-              className="hover:text-primary hidden transition-colors print:block print:text-blue-700 print:no-underline"
+              className="hidden transition-colors hover:text-primary print:block print:text-blue-700 print:no-underline"
             >
               <Mail className="inline-block h-5 w-5" />
               <span className="ml-1">contact@djl.foundation</span>
@@ -105,7 +105,7 @@ export default function Footer() {
         </div>
 
         <motion.div
-          className="border-border/30 text-muted-foreground mt-6 border-t pt-6 text-center text-sm print:text-black"
+          className="mt-6 border-t border-border/30 pt-6 text-center text-sm text-muted-foreground print:text-black"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.5 }}
@@ -115,7 +115,7 @@ export default function Footer() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.35 }}
           >
-            <p className="text-muted-foreground pt-1 text-center text-sm print:text-black">
+            <p className="pt-1 text-center text-sm text-muted-foreground print:text-black">
               The DJL Foundation does not endorse any content hosted on this
               platform.
             </p>

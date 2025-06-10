@@ -1,13 +1,19 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "~/components/ui/dialog"
-import { Informatic } from "./informatic"
-import type { InformaticProps } from "./types"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import Notifier from "./notifier";
+import type { NotifierProps } from "./types";
 
-interface InformaticDialogProps extends InformaticProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+interface NotifierDialogProps extends NotifierProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function InformaticDialog({
+export default function NotifierDialog({
   type,
   label,
   description,
@@ -16,16 +22,16 @@ export function InformaticDialog({
   onOpenChange,
   className,
   palette,
-}: InformaticDialogProps) {
+}: NotifierDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-background">
+      <DialogContent className="bg-background sm:max-w-md">
         <DialogHeader className="sr-only">
           <DialogTitle>{label}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <Informatic
+          <Notifier
             type={type}
             label={label}
             description={description}
@@ -36,5 +42,5 @@ export function InformaticDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -8,7 +8,7 @@ import { Card } from "~/components/ui/card";
 import VisualHiveStack from "@/src/components/hive-stack";
 
 export function CatchedColoniesClientPage(props: {
-  colonyQuery: Preloaded<typeof api.colonies.getColony>;
+  colonyQuery: Preloaded<typeof api.hive.colonies.getColony>;
   identifier: string;
 }) {
   const { colonyQuery, identifier } = props;
@@ -30,7 +30,7 @@ export function CatchedColoniesClientPage(props: {
   const data = colonyApi.value.data;
 
   return (
-    <div className="w-[90%] mx-auto flex gap-4 p-4">
+    <div className="mx-auto flex w-[90%] gap-4 p-4">
       <div className="w-[30%]">
         {data && <VisualHiveStack colony={data} components={[]} />}
       </div>
