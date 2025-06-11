@@ -6,10 +6,22 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "~/components/ui/button";
 import { ArrowLeft, Plus, Save } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -18,11 +30,13 @@ import { type Doc } from "#convex/dataModel";
 
 type ColonyRouterForm = {
   colony: Doc<"colonies">["identifier"];
-}
+};
 
 export default function NewComponentRouter() {
   const router = useRouter();
-  const {data: coloniesApi, isPending} = useQuery(convexQuery(api.hive.colonies.listColonies, {}));
+  const { data: coloniesApi, isPending } = useQuery(
+    convexQuery(api.hive.colonies.listColonies, {}),
+  );
   const { register, handleSubmit } = useForm<ColonyRouterForm>();
 
   const colonies = result(coloniesApi);
@@ -69,9 +83,7 @@ export default function NewComponentRouter() {
                   </CardTitle>
                   <CardDescription>Identifikation und Standort</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  Test
-                </CardContent>
+                <CardContent className="space-y-4">Test</CardContent>
               </Card>
             </motion.div>
           </div>

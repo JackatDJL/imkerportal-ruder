@@ -33,7 +33,10 @@ import { result } from "~/server/utility";
 export default function NewColony() {
   const router = useRouter();
 
-  const genIdentifierQuery = useQuery(api.hive.colonies.generateColonyIdentifier, {});
+  const genIdentifierQuery = useQuery(
+    api.hive.colonies.generateColonyIdentifier,
+    {},
+  );
 
   const genIdentifier = result(genIdentifierQuery).deconstruct().content();
 

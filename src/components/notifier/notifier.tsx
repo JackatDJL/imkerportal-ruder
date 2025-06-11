@@ -25,12 +25,14 @@ export default function Notifier({
         <HexagonIcon palette={palette} />
         <div className="absolute inset-0 flex items-center justify-center">
           <IconComponent
-            color={iconColor.startsWith('text-[') ? iconColor.slice(6, -1) : iconColor}
-            className={cn(
-              "h-10 w-10 drop-shadow-sm"
-            )}
+            color={
+              iconColor.startsWith("text-[")
+                ? iconColor.slice(6, -1)
+                : iconColor
+            }
+            className={cn("h-10 w-10 drop-shadow-sm")}
             style={{
-              transform: "translateY(-0.2rem)"
+              transform: "translateY(-0.2rem)",
             }}
             strokeWidth={2.5}
           />

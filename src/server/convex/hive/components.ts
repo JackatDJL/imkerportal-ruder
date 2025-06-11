@@ -13,15 +13,15 @@ export const listComponents = query({
       type: t.Success,
       data: components,
     })).object();
-  }
-})
+  },
+});
 
 export const listColonyComponents = query({
   args: zodToConvex(
     z.object({
       colonyId: zid("colonies").optional(),
       colonyIdentifier: z.string().startsWith("f").min(2).optional(),
-    })
+    }),
   ),
   handler: async (ctx, args): apiObjectType<Doc<"hiveComponents">[]> => {
     if (!args.colonyId && !args.colonyIdentifier) {
@@ -47,7 +47,6 @@ export const listColonyComponents = query({
           .filter((q) => q.eq(q.field("identifier"), args.colonyIdentifier))
           .collect();
         break;
-
     }
     if (components.length === 0) {
       return err((s, t) => ({
@@ -62,15 +61,15 @@ export const listColonyComponents = query({
       type: t.Success,
       data: components,
     })).object();
-  }
-})
+  },
+});
 
 export const getComponent = query({
   args: zodToConvex(
     z.object({
       componentId: zid("hiveComponents").optional(),
       identifier: z.string().startsWith("f").min(2).optional(),
-    })
+    }),
   ),
   handler: async (ctx, args): apiObjectType<Doc<"hiveComponents">> => {
     if (!args.componentId && !args.identifier) {
@@ -112,5 +111,5 @@ export const getComponent = query({
       type: t.Success,
       data: component,
     })).object();
-  }
-})
+  },
+});

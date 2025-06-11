@@ -1,8 +1,4 @@
-import {
-  internalQuery,
-  mutation,
-  query,
-} from "#convex/server";
+import { internalQuery, mutation, query } from "#convex/server";
 import { z } from "zod";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
 import { type Id, type Doc } from "#convex/dataModel";
@@ -32,8 +28,9 @@ export const getColony = query({
       colonyId: args.colonyId,
       identifier: args.identifier,
     });
-    return query
-  }})
+    return query;
+  },
+});
 
 export const createColony = mutation({
   args: zodToConvex(
@@ -64,7 +61,10 @@ export const createColony = mutation({
     const colonies = await ctx.db.query("colonies").collect();
     let identifier: string;
     if (!args.identifier) {
-      identifier = await ctx.runQuery(internal.hive.colonies.internalGenerateColonyIdentifier, {});
+      identifier = await ctx.runQuery(
+        internal.hive.colonies.internalGenerateColonyIdentifier,
+        {},
+      );
     } else {
       identifier = args.identifier;
       if (colonies.some((colony) => colony.identifier === identifier)) {
@@ -139,31 +139,34 @@ export const internalGetColony = internalQuery({
       type: t.Success,
       data: colony,
     })).object();
-  }
-})
+  },
+});
 
 export const generateColonyIdentifier = query({
   handler: async (ctx): apiObjectType<string> => {
-    const query = await ctx.runQuery(internal.hive.colonies.internalGenerateColonyIdentifier, {});
+    const query = await ctx.runQuery(
+      internal.hive.colonies.internalGenerateColonyIdentifier,
+      {},
+    );
     return ok((s, t) => ({
       status: s.Success,
       type: t.Success,
       data: query,
     })).object();
-  }
-})
+  },
+});
 
 export const internalGenerateColonyIdentifier = internalQuery({
   handler: async (ctx) => {
     const colonies = await ctx.db.query("colonies").collect();
-    const identifiers = colonies.map(colony => colony.identifier);
+    const identifiers = colonies.map((colony) => colony.identifier);
     let identifier: string;
     let i = 1;
     do {
       identifier = `f${i}`;
       i++;
     } while (identifiers.includes(identifier));
-    
+
     return identifier;
-  }
-})
+  },
+});

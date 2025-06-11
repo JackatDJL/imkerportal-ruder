@@ -16,7 +16,9 @@ import {
 
 export default function NotifierDemo() {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedPalette, setSelectedPalette] = useState<ColorPalette>(defaultPalettes.hive!);
+  const [selectedPalette, setSelectedPalette] = useState<ColorPalette>(
+    defaultPalettes.hive!,
+  );
   const { showInfo, InfoDialog } = useInfoDialog();
   const types: NotifierType[] = [
     "info",

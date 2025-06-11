@@ -36,9 +36,7 @@ export function WorkInProgressPage({
 }
 
 // Not Found Page
-export function NotFoundPage({
-  palette = defaultPalettes.hive,
-}: PresetProps) {
+export function NotFoundPage({ palette = defaultPalettes.hive }: PresetProps) {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <NotifierCard
