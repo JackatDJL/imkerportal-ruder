@@ -43,7 +43,7 @@ const condition = z
     "disinfected",
     "wax residue",
   ])
-  .default("new");
+  .optional();
 
 const weather = z
   .object({
@@ -75,7 +75,7 @@ const weather = z
   })
   .optional();
 
-const hiveComponentBaseType = z.object({
+export const hiveComponentBaseType = z.object({
   identifier: z
     .string()
     .startsWith("z")
@@ -123,7 +123,7 @@ const hiveComponentBaseType = z.object({
     .optional(),
 });
 
-const hiveComponentDataTypes = z.object({
+export const hiveComponentDataTypes = z.object({
   asignedColony: zid("colonies").optional(), // Foreign key to colonies table
   // The usability and optionality of entries should be omited below (hiveComponentDataTypes)
   frameSize: z.union([
@@ -138,14 +138,14 @@ const hiveComponentDataTypes = z.object({
       description: z.string(), // Custom frame size description
     }),
   ]),
-  maxFrames: z.number().int().positive().default(12), // Maximum number of frames this component can hold
-  currentlyHolding: z.number().int().nonnegative().default(0), // Currently occupied frames
+  maxFrames: z.number().int().positive().optional(), // Maximum number of frames this component can hold
+  currentlyHolding: z.number().int().nonnegative().optional(), // Currently occupied frames
   usedSince: z.string().regex(/^\d{2}-\d{2}-\d{4}$/), // DD-MM-YYYY format
   condition,
   lastCleaned: z
     .string()
     .regex(/^new|\d{4}-\d{2}-\d{2}$/)
-    .default("new"), // "new" or YYYY-MM-DD format
+    .optional(), // YYYY-MM-DD format or "new"
   location: z.string().optional(), // Optional location for the component
   notes: z.string().optional(), // Optional notes about the component
 });
