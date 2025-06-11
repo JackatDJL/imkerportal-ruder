@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { api } from "#convex/api";
@@ -27,26 +28,31 @@ import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { type Doc } from "#convex/dataModel";
+import { useEffect, useState } from "react";
+import { type z } from "zod";
+import type { hiveComponentTypes } from "~/server/convex/schema";
 
-type ColonyRouterForm = {
-  colony: Doc<"colonies">["identifier"];
-};
+type CreateColonyForm = z.infer<typeof hiveComponentTypes>;
+
+interface ErrorZustand {
+  placeholder: string;
+  //
+}
+
+type ComponentTypes = Doc<"hiveComponents">["type"];
 
 export default function NewComponentRouter() {
   const router = useRouter();
-  const { data: coloniesApi, isPending } = useQuery(
-    convexQuery(api.hive.colonies.listColonies, {}),
-  );
-  const { register, handleSubmit } = useForm<ColonyRouterForm>();
+  const [ selectedComponentType, setSelectedComponentType ] = useState<ComponentTypes>("Zarge");
 
-  const colonies = result(coloniesApi);
-  if (colonies.isErr()) {
-    console.error("Error fetching colonies:", colonies.error);
-    return <div>Error loading colonies</div>;
-  }
-  const data = colonies.value.data;
+  const { register, handleSubmit } = useForm<CreateColonyForm>();
 
-  const onSubmit: SubmitHandler<ColonyRouterForm> = (formData) => {
+  const { data: coloniesData, isLoading: coloniesLoading } = useQuery({
+    queryKey: ["colonies"],
+    queryFn: () => convexQuery(api.hive.colonies.listColonies, {}),
+  });
+
+  const onSubmit: SubmitHandler<CreateColonyForm> = (formData) => {
     // Handle form submission
   };
 
@@ -69,6 +75,43 @@ export default function NewComponentRouter() {
         {/* Form Content */}
         <div className="flex grow items-center justify-center">
           <div className="grid w-3/4 gap-6">
+            {/* Component Type Selection */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="grid gap-6 lg:grid-cols-2"
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="h-5 w-5" />
+                    Komponententyp
+                  </CardTitle>
+                  <CardDescription>
+                    Wählen Sie den Typ der neuen Komponente aus
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Select
+                    onValueChange={(value) => setSelectedComponentType(value as ComponentTypes)}
+                    defaultValue={selectedComponentType}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Komponententyp auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="Zarge">Zarge</SelectItem>
+                        <SelectItem value="Boden">Boden</SelectItem>
+                        <SelectItem value="Deckel">Deckel</SelectItem>
+                        <SelectItem value="One Way Gate">One Way Gate</SelectItem>
+                        <SelectItem value="Königinnenabsperrgitter">Königinnenabsperrgitter</SelectItem>
+                        <SelectItem value="Futterraum">Futterraum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            </motion.div>
+
             {/* Basic Information */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -79,7 +122,7 @@ export default function NewComponentRouter() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Plus className="h-5 w-5" />
-                    Grunddaten
+                    Grundinformationen
                   </CardTitle>
                   <CardDescription>Identifikation und Standort</CardDescription>
                 </CardHeader>

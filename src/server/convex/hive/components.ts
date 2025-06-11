@@ -113,3 +113,7 @@ export const getComponent = query({
     })).object();
   },
 });
+
+// need internal mutation "moveComponent" to move components between colonies and to storage
+
+// 

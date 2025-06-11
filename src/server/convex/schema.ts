@@ -150,7 +150,7 @@ const hiveComponentDataTypes = z.object({
   notes: z.string().optional(), // Optional notes about the component
 });
 
-const hiveComponentTypes = z.discriminatedUnion("type", [
+export const hiveComponentTypes = z.discriminatedUnion("type", [
   z
     .object({
       identifier: z.string().startsWith("z"),

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-sync-scripts */
 import "~/styles/globals.css";
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
@@ -11,6 +12,7 @@ import { VercelToolbar } from "@vercel/toolbar/next";
 import { Toaster } from "~/components/ui/sonner";
 import { ThemeProvider } from "~/components/theme-provider";
 import Header from "~/components/header";
+import Head from "next/head";
 
 export const metadata: Metadata = {
   title: "Imkerportal Imkerei Ruder - by DJL",
@@ -93,6 +95,12 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <Head>
+      <script
+          crossOrigin="anonymous"
+          src="//unpkg.com/react-scan/dist/auto.global.js"
+        />
+      </Head>
       <body className={`${GeistSans.variable} antialiased`}>
         <ClerkProvider dynamic>
           <PostHogProvider>
