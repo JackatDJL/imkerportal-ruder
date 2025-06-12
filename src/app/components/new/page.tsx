@@ -1,41 +1,34 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-"use client";
+"use client"
 
-import { api } from "#convex/api";
-import { result, type apiError } from "~/server/utility";
-import { convexQuery } from "@convex-dev/react-query";
-import { useQuery } from "@tanstack/react-query";
-import { Button } from "~/components/ui/button";
-import { ArrowLeft, Plus, Save } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "~/components/ui/card";
-import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import { useForm, type SubmitHandler, Controller } from "react-hook-form";
-import { type Doc } from "#convex/dataModel";
-import { useEffect, useRef } from "react";
-import Choicebox from "~/components/choicebox";
-import { ComboBox } from "~/components/combobox";
-import { create } from "zustand";
+import { api } from "#convex/api"
+import { result, type apiError } from "~/server/utility"
+import { convexQuery } from "@convex-dev/react-query"
+import { useQuery } from "@tanstack/react-query"
+import { Button } from "~/components/ui/button"
+import { ArrowLeft, Plus, Save } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card"
+import { useRouter } from "next/navigation"
+import { motion } from "motion/react"
+import { useForm, type SubmitHandler, Controller } from "react-hook-form"
+import type { Doc } from "#convex/dataModel"
+import { useEffect, useRef } from "react"
+import Choicebox from "~/components/choicebox"
+import { ComboBox } from "~/components/combobox"
+import { create } from "zustand"
 
 // --- Consolidated Zustand Store ---
 interface ApiState {
-  colonyApiResponse?: Doc<"colonies">[];
-  identifierApiResponse?: string;
-  colonyApiError?: apiError;
-  identifierApiError?: apiError;
+  colonyApiResponse?: Doc<"colonies">[]
+  identifierApiResponse?: string
+  colonyApiError?: apiError
+  identifierApiError?: apiError
 }
 
 interface ApiActions {
-  setApiResponse: (field: "colonyApi" | "identifierApi", response: Doc<"colonies">[] | string) => void;
-  clearApiResponse: (field: "colonyApi" | "identifierApi") => void;
-  setError: (field: "colonyApi" | "identifierApi", error: apiError) => void;
-  clearError: (field: "colonyApi" | "identifierApi") => void;
+  setApiResponse: (field: "colonyApi" | "identifierApi", response: Doc<"colonies">[] | string) => void
+  clearApiResponse: (field: "colonyApi" | "identifierApi") => void
+  setError: (field: "colonyApi" | "identifierApi", error: apiError) => void
+  clearError: (field: "colonyApi" | "identifierApi") => void
 }
 
 const useApiAndErrorStore = create<ApiState & ApiActions>((set) => ({
@@ -49,130 +42,108 @@ const useApiAndErrorStore = create<ApiState & ApiActions>((set) => ({
       ...state,
       [`${field}ApiResponse`]: response,
       [`${field}ApiError`]: undefined, // Clear error on successful response
-    }));
+    }))
   },
   clearApiResponse: (field) => {
     set((state) => ({
       ...state,
       [`${field}ApiResponse`]: undefined,
-    }));
+    }))
   },
   setError: (field, error) => {
     set((state) => ({
       ...state,
       [`${field}ApiError`]: error,
       [`${field}ApiResponse`]: undefined, // Clear response on error
-    }));
+    }))
   },
   clearError: (field) => {
     set((state) => ({
       ...state,
       [`${field}ApiError`]: undefined,
-    }));
+    }))
   },
-}));
+}))
 
-type FormData = typeof api.hive.components.createComponent._args.data;
+type FormData = typeof api.hive.components.createComponent._args.data
 
 export default function NewComponent() {
-  const router = useRouter();
+  const router = useRouter()
 
-  const {
-    // colonyApiResponse,
-    // identifierApiResponse,
-    // colonyApiError,
-    // identifierApiError,
-    setApiResponse,
-    setError,
-  } = useApiAndErrorStore();
+  const { setApiResponse, setError } = useApiAndErrorStore()
 
   const { data: coloniesQueryResult, isLoading: coloniesLoading } = useQuery(
     convexQuery(api.hive.colonies.listColonies, {}),
-  );
-  const colonies = result(coloniesQueryResult);
+  )
+  const colonies = result(coloniesQueryResult)
 
-  const {
-    // register,
-    handleSubmit,
-    watch,
-    setValue,
-    control,
-    // formState: { errors },
-  } = useForm<FormData>({
+  const { handleSubmit, watch, setValue, control, getValues } = useForm<FormData>({
     defaultValues: {
       type: "Zarge",
-      identifier: '',
+      identifier: "",
     },
-  });
+  })
 
-  const selectedComponentType = watch("type");
+  const selectedComponentType = watch("type")
 
-  const {
-    data: componentIdentifierQueryResult,
-    isLoading: componentIdentifierLoading,
-  } = useQuery(
+  const { data: componentIdentifierQueryResult, isLoading: componentIdentifierLoading } = useQuery(
     convexQuery(api.hive.components.generateComponentIdentifier, {
       componentType: selectedComponentType,
     }),
-  );
-  const componentIdentifier = result(componentIdentifierQueryResult);
+  )
+  const componentIdentifier = result(componentIdentifierQueryResult)
 
-  // Ref to track the last identifier value that was successfully set into the form
-  const lastSetIdentifierRef = useRef<string | null>(null);
+  const lastSetIdentifierRef = useRef<string | null>(null)
 
   // Handle colony data/errors
   useEffect(() => {
     if (colonies.isOk() && colonies.value.data) {
-      setApiResponse("colonyApi", colonies.value.data);
+      setApiResponse("colonyApi", colonies.value.data)
     } else if (colonies.isErr()) {
-      setError("colonyApi", colonies.error);
+      setError("colonyApi", colonies.error)
     }
-  }, [colonies]);
+  }, [colonies, setApiResponse, setError])
 
-  // Handle component identifier data/errors
   useEffect(() => {
-    if (componentIdentifier.isOk() && componentIdentifier.value.data) {
-      const newIdentifier = componentIdentifier.value.data;
-      // Only set the value if it's different from the current form value
-      // AND it's different from the last value we successfully set
-      if (newIdentifier !== watch('identifier') && newIdentifier !== lastSetIdentifierRef.current) {
-        setApiResponse("identifierApi", newIdentifier);
-        setValue("identifier", newIdentifier, { shouldValidate: true });
-        lastSetIdentifierRef.current = newIdentifier; // Update the ref
-      }
-    } else if (componentIdentifier.isErr()) {
-      setError("identifierApi", componentIdentifier.error);
-      // Only clear if the current form value is not already empty
-      if (watch('identifier') !== '') {
-        setValue("identifier", '', { shouldValidate: true });
-        lastSetIdentifierRef.current = null; // Clear ref on error
+    if (componentIdentifier) {
+      const newIdentifierData = componentIdentifier.isOk() ? componentIdentifier.value.data : undefined
+      const errorData = componentIdentifier.isErr() ? componentIdentifier.error : undefined
+
+      if (newIdentifierData !== undefined) {
+        const currentFormIdentifier = getValues("identifier")
+
+        if (newIdentifierData !== currentFormIdentifier && newIdentifierData !== lastSetIdentifierRef.current) {
+          setApiResponse("identifierApi", newIdentifierData)
+          setValue("identifier", newIdentifierData, { shouldValidate: true })
+          lastSetIdentifierRef.current = newIdentifierData
+        }
+      } else if (errorData !== undefined) {
+        setError("identifierApi", errorData)
+        const currentFormIdentifier = getValues("identifier")
+        if (currentFormIdentifier !== "") {
+          setValue("identifier", "", { shouldValidate: true })
+          lastSetIdentifierRef.current = null
+        }
       }
     }
-  }, [componentIdentifier]);
+  }, [componentIdentifier, setValue, setError, setApiResponse, getValues])
 
-  // Reset the lastSetIdentifierRef when selectedComponentType changes
-  // This ensures that a new identifier can be fetched and set when the component type is altered.
   useEffect(() => {
-    lastSetIdentifierRef.current = null;
-  }, [selectedComponentType]);
+    lastSetIdentifierRef.current = null
+  }, [selectedComponentType])
 
   const onSubmit: SubmitHandler<FormData> = (data) => {
-    console.log("Form Data Submitted:", data);
+    console.log("Form Data Submitted:", data)
     // You would typically call a Convex mutation here, e.g.:
     // createComponentMutation.mutate(data);
-  };
+  }
 
-  const overallLoading = coloniesLoading || componentIdentifierLoading;
+  const overallLoading = coloniesLoading || componentIdentifierLoading
 
   return (
     <div className="flex-1 space-y-6 p-6">
       <div className="relative mb-6 flex items-center justify-center max-sm:hidden">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-          className="absolute left-0"
-        >
+        <Button variant="ghost" size="sm" onClick={() => router.back()} className="absolute left-0">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zurück
         </Button>
@@ -184,10 +155,7 @@ export default function NewComponent() {
         <div className="flex grow items-center justify-center">
           <div className="grid w-5/6 gap-6 md:w-4/5 xl:w-3/4">
             {/* Component Type Selection */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               <Card>
                 <CardContent className="space-y-4 max-xl:hidden">
                   <Controller
@@ -251,11 +219,7 @@ export default function NewComponent() {
             </motion.div>
 
             {/* Basic Information */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              // className="grid gap-6 lg:grid-cols-2"
-            >
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -265,8 +229,8 @@ export default function NewComponent() {
                   <CardDescription>Identifikation und Standort</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Example of a registered input field
-                  <div>
+                  {/* Example of a registered input field */}
+                  {/* <div>
                     <Label htmlFor="usedSince">Genutzt seit</Label>
                     <Input id="usedSince" type="date" {...register("usedSince")} />
                   </div> */}
@@ -289,5 +253,5 @@ export default function NewComponent() {
         </div>
       </form>
     </div>
-  );
+  )
 }
