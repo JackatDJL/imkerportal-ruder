@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import { api } from "#convex/api";
-import { result } from "~/server/utility";
+import { result, type apiError } from "~/server/utility";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "~/components/ui/button";
@@ -14,63 +14,155 @@ import {
   CardTitle,
   CardDescription,
 } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import { Skeleton } from "~/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useForm, type SubmitHandler, Controller } from "react-hook-form";
 import { type Doc } from "#convex/dataModel";
-import { useEffect, useState } from "react";
-import { type z } from "zod";
-import type { hiveComponentTypes } from "~/server/convex/schema";
+import { useEffect, useRef } from "react";
 import Choicebox from "~/components/choicebox";
 import { ComboBox } from "~/components/combobox";
-import { createVisibilityCalculator } from "~/components/render-utils";
-import { createComponentType } from "~/server/convex/hive/components";
+import { create } from "zustand";
 
-interface ErrorZustand {
-  placeholder: string;
-  // placeholder for implementing form validation errors mit dem Biblieothekserweiterungspacket zur erweiterung des Zustandsmanagements in Reaktion namens Zustand
+// --- Consolidated Zustand Store ---
+interface ApiState {
+  colonyApiResponse?: Doc<"colonies">[];
+  identifierApiResponse?: string;
+  colonyApiError?: apiError;
+  identifierApiError?: apiError;
 }
+
+interface ApiActions {
+  setApiResponse: (field: "colonyApi" | "identifierApi", response: Doc<"colonies">[] | string) => void;
+  clearApiResponse: (field: "colonyApi" | "identifierApi") => void;
+  setError: (field: "colonyApi" | "identifierApi", error: apiError) => void;
+  clearError: (field: "colonyApi" | "identifierApi") => void;
+}
+
+const useApiAndErrorStore = create<ApiState & ApiActions>((set) => ({
+  colonyApiResponse: undefined,
+  identifierApiResponse: undefined,
+  colonyApiError: undefined,
+  identifierApiError: undefined,
+
+  setApiResponse: (field, response) => {
+    set((state) => ({
+      ...state,
+      [`${field}ApiResponse`]: response,
+      [`${field}ApiError`]: undefined, // Clear error on successful response
+    }));
+  },
+  clearApiResponse: (field) => {
+    set((state) => ({
+      ...state,
+      [`${field}ApiResponse`]: undefined,
+    }));
+  },
+  setError: (field, error) => {
+    set((state) => ({
+      ...state,
+      [`${field}ApiError`]: error,
+      [`${field}ApiResponse`]: undefined, // Clear response on error
+    }));
+  },
+  clearError: (field) => {
+    set((state) => ({
+      ...state,
+      [`${field}ApiError`]: undefined,
+    }));
+  },
+}));
 
 type FormData = typeof api.hive.components.createComponent._args.data;
 
-export default function NewComponentRouter() {
+export default function NewComponent() {
   const router = useRouter();
 
-  const { data: coloniesData, isLoading: coloniesLoading } = useQuery(convexQuery(api.hive.colonies.listColonies, {}));
-  const colonies = result(coloniesData);
+  const {
+    // colonyApiResponse,
+    // identifierApiResponse,
+    // colonyApiError,
+    // identifierApiError,
+    setApiResponse,
+    setError,
+  } = useApiAndErrorStore();
 
-  // Form State Management using react-hook-form
-  const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<FormData>({
+  const { data: coloniesQueryResult, isLoading: coloniesLoading } = useQuery(
+    convexQuery(api.hive.colonies.listColonies, {}),
+  );
+  const colonies = result(coloniesQueryResult);
+
+  const {
+    // register,
+    handleSubmit,
+    watch,
+    setValue,
+    control,
+    // formState: { errors },
+  } = useForm<FormData>({
     defaultValues: {
       type: "Zarge",
-    }
+      identifier: '',
+    },
   });
 
   const selectedComponentType = watch("type");
-  const [fieldVisibility, setFieldVisibility] = useState(
-    createVisibilityCalculator(createComponentType.shape.data, selectedComponentType)
+
+  const {
+    data: componentIdentifierQueryResult,
+    isLoading: componentIdentifierLoading,
+  } = useQuery(
+    convexQuery(api.hive.components.generateComponentIdentifier, {
+      componentType: selectedComponentType,
+    }),
   );
-  
-  
+  const componentIdentifier = result(componentIdentifierQueryResult);
 
+  // Ref to track the last identifier value that was successfully set into the form
+  const lastSetIdentifierRef = useRef<string | null>(null);
+
+  // Handle colony data/errors
   useEffect(() => {
-    setValue("type", selectedComponentType);
-    setFieldVisibility(createVisibilityCalculator(createComponentType.shape.data, selectedComponentType));
-  }, [selectedComponentType, setValue]);
+    if (colonies.isOk() && colonies.value.data) {
+      setApiResponse("colonyApi", colonies.value.data);
+    } else if (colonies.isErr()) {
+      setError("colonyApi", colonies.error);
+    }
+  }, [colonies]);
 
+  // Handle component identifier data/errors
   useEffect(() => {
-    console.dir("Form Errors:", errors);
-  }, [errors]);
+    if (componentIdentifier.isOk() && componentIdentifier.value.data) {
+      const newIdentifier = componentIdentifier.value.data;
+      // Only set the value if it's different from the current form value
+      // AND it's different from the last value we successfully set
+      if (newIdentifier !== watch('identifier') && newIdentifier !== lastSetIdentifierRef.current) {
+        setApiResponse("identifierApi", newIdentifier);
+        setValue("identifier", newIdentifier, { shouldValidate: true });
+        lastSetIdentifierRef.current = newIdentifier; // Update the ref
+      }
+    } else if (componentIdentifier.isErr()) {
+      setError("identifierApi", componentIdentifier.error);
+      // Only clear if the current form value is not already empty
+      if (watch('identifier') !== '') {
+        setValue("identifier", '', { shouldValidate: true });
+        lastSetIdentifierRef.current = null; // Clear ref on error
+      }
+    }
+  }, [componentIdentifier]);
 
-  // thinking about implementing react-hook-form for better form management
+  // Reset the lastSetIdentifierRef when selectedComponentType changes
+  // This ensures that a new identifier can be fetched and set when the component type is altered.
+  useEffect(() => {
+    lastSetIdentifierRef.current = null;
+  }, [selectedComponentType]);
+
   const onSubmit: SubmitHandler<FormData> = (data) => {
-    console.log(data);
-    // Process and submit form data here
-    // Example: createComponentMutation.mutate({ data });
+    console.log("Form Data Submitted:", data);
+    // You would typically call a Convex mutation here, e.g.:
+    // createComponentMutation.mutate(data);
   };
+
+  const overallLoading = coloniesLoading || componentIdentifierLoading;
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -90,7 +182,7 @@ export default function NewComponentRouter() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Form Content */}
         <div className="flex grow items-center justify-center">
-          <div className="grid xl:w-3/4 md:w-4/5 w-5/6 gap-6">
+          <div className="grid w-5/6 gap-6 md:w-4/5 xl:w-3/4">
             {/* Component Type Selection */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -108,7 +200,10 @@ export default function NewComponentRouter() {
                           { value: "Boden", label: "Boden" },
                           { value: "Deckel", label: "Deckel" },
                           { value: "One Way Gate", label: "One Way Gate" },
-                          { value: "Königinnenabsperrgitter", label: "Königinnenabsperrgitter" },
+                          {
+                            value: "Königinnenabsperrgitter",
+                            label: "Königinnenabsperrgitter",
+                          },
                           { value: "Futterraum", label: "Futterraum" },
                         ]}
                         value={field.value}
@@ -122,8 +217,11 @@ export default function NewComponentRouter() {
                     )}
                   />
                 </CardContent>
-                <CardContent className="space-y-4 xl:hidden flex items-center max-sm:justify-center">
-                  <CardDescription className="text-lg font-semibold mx-1 max-sm:hidden" style={{ transform: "translateY(0.5rem)" }}>
+                <CardContent className="flex items-center space-y-4 max-sm:justify-center xl:hidden">
+                  <CardDescription
+                    className="mx-1 text-lg font-semibold max-sm:hidden"
+                    style={{ transform: "translateY(0.5rem)" }}
+                  >
                     Komponententyp:
                   </CardDescription>
                   <Controller
@@ -136,7 +234,10 @@ export default function NewComponentRouter() {
                           { value: "Boden", label: "Boden" },
                           { value: "Deckel", label: "Deckel" },
                           { value: "One Way Gate", label: "One Way Gate" },
-                          { value: "Königinnenabsperrgitter", label: "Königinnenabsperrgitter" },
+                          {
+                            value: "Königinnenabsperrgitter",
+                            label: "Königinnenabsperrgitter",
+                          },
                           { value: "Futterraum", label: "Futterraum" },
                         ]}
                         className="mx-3"
@@ -177,7 +278,7 @@ export default function NewComponentRouter() {
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end max-sm:justify-center gap-4">
+        <div className="flex justify-end gap-4 max-sm:justify-center">
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Abbrechen
           </Button>
