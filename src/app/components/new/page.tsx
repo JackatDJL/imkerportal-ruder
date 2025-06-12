@@ -53,7 +53,8 @@ export default function NewComponentRouter() {
   const [fieldVisibility, setFieldVisibility] = useState(
     createVisibilityCalculator(createComponentType.shape.data, selectedComponentType)
   );
-  console.log("Field Visibility:", fieldVisibility); 
+  
+  
 
   useEffect(() => {
     setValue("type", selectedComponentType);

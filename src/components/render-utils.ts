@@ -1,46 +1,59 @@
-import { z, type ZodDiscriminatedUnion, type ZodTypeAny, type ZodDiscriminatedUnionOption } from "zod";
+import type { z, ZodTypeAny, ZodRawShape, UnknownKeysParam } from "zod";
 
+// Fucking hated that typeerror
+type CapitalizeString<S extends string> = S extends `${infer FirstLetter}${infer Rest}`
+  ? `${Uppercase<FirstLetter>}${Rest}`
+  : S;
+
+// show type gen 
+export type VisibilityResult<PossibleFieldNames extends string> = {
+  [K in PossibleFieldNames as `show${CapitalizeString<K>}`]: boolean;
+};
+
+// why does esm not have a function for this??
 function capitalize(s: string): string {
   if (!s) return '';
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export function createVisibilityCalculator(
-  discriminatedUnionSchema: ZodDiscriminatedUnion<string, ReadonlyArray<ZodDiscriminatedUnionOption<string>>>,
-  discriminatorValue: string
-): Record<string, boolean> {
-  const visibilityMap: Record<string, boolean> = {};
-  const allFoundFields = new Set<string>();
+export function createVisibilityCalculator<
+  DiscriminatedUnionSchema extends z.ZodDiscriminatedUnion<string, ReadonlyArray<z.ZodObject<ZodRawShape, UnknownKeysParam, ZodTypeAny>>>,
+  PossibleFieldNames extends keyof z.output<DiscriminatedUnionSchema['_def']['options'][number]>,
+  DiscriminatorValueType extends Parameters<DiscriminatedUnionSchema['_def']['optionsMap']['get']>[0] // f*n. forgot about Parameters<>
+>(
+  discriminatedUnionSchema: DiscriminatedUnionSchema,
+  discriminatorValue: DiscriminatorValueType
+): VisibilityResult<Extract<PossibleFieldNames, string>> {
 
-  // 1. Discover all possible fields from all options in the discriminated union
-  for (const optionSchema of discriminatedUnionSchema._def.optionsMap.values()) {
-    if (optionSchema instanceof z.ZodObject) {
-      for (const key of Object.keys(optionSchema.shape)) {
-        allFoundFields.add(key);
-      }
+  type ActualPossibleFieldNames = Extract<PossibleFieldNames, string>;
+
+  const intermediateVisibilityMap: Record<string, boolean> = {}; // NOT TYPED YET
+
+  const allFoundFields = new Set<ActualPossibleFieldNames>();
+
+  for (const optionSchema of discriminatedUnionSchema._def.options) {
+    for (const key of Object.keys(optionSchema.shape)) {
+      allFoundFields.add(key as ActualPossibleFieldNames);
     }
   }
 
-  // 2. Initialize visibility for all found fields to false
-  for (const field of allFoundFields) {
-    visibilityMap[`show${capitalize(field)}`] = false;
+  for (const rawField of allFoundFields) {
+    intermediateVisibilityMap[`show${capitalize(rawField)}`] = false;
   }
 
-  // 3. Set visibility to true for fields present in the specific schema for the discriminatorValue
   const specificSchema = discriminatedUnionSchema._def.optionsMap.get(discriminatorValue);
-  if (specificSchema && specificSchema instanceof z.ZodObject) {
-    const shape = specificSchema.shape as Record<string, ZodTypeAny>;
-    for (const field of Object.keys(shape)) {
-      // Ensure the field was part of the initially discovered set, though it should be.
-      if (allFoundFields.has(field)) {
-        visibilityMap[`show${capitalize(field)}`] = true;
+  if (specificSchema) {
+    const shape = specificSchema.shape as Record<ActualPossibleFieldNames, ZodTypeAny>;
+    for (const rawField of Object.keys(shape)) {
+      if (allFoundFields.has(rawField as ActualPossibleFieldNames)) {
+        intermediateVisibilityMap[`show${capitalize(rawField as ActualPossibleFieldNames)}`] = true;
       }
     }
   } else {
     console.warn(
-      `Schema not found for type: ${discriminatorValue}, or it's not a ZodObject. All derived field visibilities will remain false.`
+      `Schema not found for type: ${String(discriminatorValue)}, or it's not a ZodObject. All derived field visibilities will remain false.`
     );
   }
-
-  return visibilityMap;
+  // Cast at the end once all properties are correctly assigned
+  return intermediateVisibilityMap as VisibilityResult<ActualPossibleFieldNames>; 
 }
