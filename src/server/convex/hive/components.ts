@@ -1,5 +1,5 @@
 import { type apiObjectType, ok, err } from "#utility";
-import { zodToConvex, zid, zodToConvexFields } from "convex-helpers/server/zod";
+import { zodToConvex, zid } from "convex-helpers/server/zod";
 import { z } from "zod";
 import { internalQuery, mutation, query } from "#convex/server";
 import { type Id, type Doc } from "#convex/dataModel";
@@ -197,7 +197,7 @@ export const generateComponentIdentifier = query({
   },
 });
 
-const createComponentType = z.object({
+export const createComponentType = z.object({
   data: z.discriminatedUnion("type", [
     z
       .object({

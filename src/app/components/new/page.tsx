@@ -19,51 +19,57 @@ import { Label } from "~/components/ui/label";
 import { Skeleton } from "~/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, type SubmitHandler, Controller } from "react-hook-form";
 import { type Doc } from "#convex/dataModel";
 import { useEffect, useState } from "react";
 import { type z } from "zod";
 import type { hiveComponentTypes } from "~/server/convex/schema";
 import Choicebox from "~/components/choicebox";
 import { ComboBox } from "~/components/combobox";
+import { createVisibilityCalculator } from "~/components/render-utils";
+import { createComponentType } from "~/server/convex/hive/components";
 
 interface ErrorZustand {
   placeholder: string;
   // placeholder for implementing form validation errors mit dem Biblieothekserweiterungspacket zur erweiterung des Zustandsmanagements in Reaktion namens Zustand
 }
 
+type FormData = typeof api.hive.components.createComponent._args.data;
+
 export default function NewComponentRouter() {
   const router = useRouter();
-  
+
   const { data: coloniesData, isLoading: coloniesLoading } = useQuery(convexQuery(api.hive.colonies.listColonies, {}));
   const colonies = result(coloniesData);
 
-  // Form State Management
-  const [selectedComponentType, setSelectedComponentType] = useState<typeof api.hive.components.createComponent._args.data.type>("Zarge");
-
-  const [formData, setFormData] = useState<typeof api.hive.components.createComponent._args>({
-    data: {
-      type: selectedComponentType,
-      usedSince: new Date().toISOString().slice(0, 10),
+  // Form State Management using react-hook-form
+  const { register, handleSubmit, watch, setValue, control, formState: { errors } } = useForm<FormData>({
+    defaultValues: {
+      type: "Zarge",
     }
   });
 
-  useEffect(() => {
-    setFormData(prev => ({
-      data: {
-        ...prev.data,
-        type: selectedComponentType,
-      }
-    }));
-  }, [selectedComponentType]);
+  const selectedComponentType = watch("type");
+  const [fieldVisibility, setFieldVisibility] = useState(
+    createVisibilityCalculator(createComponentType.shape.data, selectedComponentType)
+  );
+  console.log("Field Visibility:", fieldVisibility); 
 
   useEffect(() => {
-    if (formData.data.type) {
-      setSelectedComponentType(formData.data.type);
-    }
-  }, [formData.data.type]);
+    setValue("type", selectedComponentType);
+    setFieldVisibility(createVisibilityCalculator(createComponentType.shape.data, selectedComponentType));
+  }, [selectedComponentType, setValue]);
+
+  useEffect(() => {
+    console.dir("Form Errors:", errors);
+  }, [errors]);
 
   // thinking about implementing react-hook-form for better form management
+  const onSubmit: SubmitHandler<FormData> = (data) => {
+    console.log(data);
+    // Process and submit form data here
+    // Example: createComponentMutation.mutate({ data });
+  };
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -80,10 +86,10 @@ export default function NewComponentRouter() {
         <h1 className="text-3xl font-bold tracking-tight">Neue Komponente</h1>
       </div>
 
-      <form className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Form Content */}
         <div className="flex grow items-center justify-center">
-          <div className="grid w-3/4 gap-6">
+          <div className="grid xl:w-3/4 md:w-4/5 w-5/6 gap-6">
             {/* Component Type Selection */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -91,41 +97,52 @@ export default function NewComponentRouter() {
             >
               <Card>
                 <CardContent className="space-y-4 max-xl:hidden">
-                  <Choicebox
-                  options={[
-                  { value: "Zarge", label: "Zarge" },
-                  { value: "Boden", label: "Boden" },
-                  { value: "Deckel", label: "Deckel" },
-                  { value: "One Way Gate", label: "One Way Gate" },
-                  { value: "Königinnenabsperrgitter", label: "Königinnenabsperrgitter" },
-                  { value: "Futterraum", label: "Futterraum" },
-                  ]}
-                  value={selectedComponentType}
-                  onChange={setSelectedComponentType}
-                  direction={"row"}
-                  size="sm"
-                  variant="card"
-                  className="justify-around xl:justify-center"
-                  optionClassName="xl:px-4 xl:mx-2"
-                  
+                  <Controller
+                    name="type"
+                    control={control}
+                    render={({ field }) => (
+                      <Choicebox
+                        options={[
+                          { value: "Zarge", label: "Zarge" },
+                          { value: "Boden", label: "Boden" },
+                          { value: "Deckel", label: "Deckel" },
+                          { value: "One Way Gate", label: "One Way Gate" },
+                          { value: "Königinnenabsperrgitter", label: "Königinnenabsperrgitter" },
+                          { value: "Futterraum", label: "Futterraum" },
+                        ]}
+                        value={field.value}
+                        onChange={field.onChange}
+                        direction={"row"}
+                        size="sm"
+                        variant="card"
+                        className="justify-around xl:justify-center"
+                        optionClassName="xl:px-4 xl:mx-2"
+                      />
+                    )}
                   />
                 </CardContent>
                 <CardContent className="space-y-4 xl:hidden flex items-center max-sm:justify-center">
                   <CardDescription className="text-lg font-semibold mx-1 max-sm:hidden" style={{ transform: "translateY(0.5rem)" }}>
                     Komponententyp:
                   </CardDescription>
-                  <ComboBox
-                    options={[
-                      { value: "Zarge", label: "Zarge" },
-                      { value: "Boden", label: "Boden" },
-                      { value: "Deckel", label: "Deckel" },
-                      { value: "One Way Gate", label: "One Way Gate" },
-                      { value: "Königinnenabsperrgitter", label: "Königinnenabsperrgitter" },
-                      { value: "Futterraum", label: "Futterraum" },
-                    ]}
-                    className="mx-3"
-                    value={selectedComponentType}
-                    onChange={setSelectedComponentType}
+                  <Controller
+                    name="type"
+                    control={control}
+                    render={({ field }) => (
+                      <ComboBox
+                        options={[
+                          { value: "Zarge", label: "Zarge" },
+                          { value: "Boden", label: "Boden" },
+                          { value: "Deckel", label: "Deckel" },
+                          { value: "One Way Gate", label: "One Way Gate" },
+                          { value: "Königinnenabsperrgitter", label: "Königinnenabsperrgitter" },
+                          { value: "Futterraum", label: "Futterraum" },
+                        ]}
+                        className="mx-3"
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                 </CardContent>
               </Card>
@@ -145,7 +162,14 @@ export default function NewComponentRouter() {
                   </CardTitle>
                   <CardDescription>Identifikation und Standort</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">Test</CardContent>
+                <CardContent className="space-y-4">
+                  {/* Example of a registered input field
+                  <div>
+                    <Label htmlFor="usedSince">Genutzt seit</Label>
+                    <Input id="usedSince" type="date" {...register("usedSince")} />
+                  </div> */}
+                  Test
+                </CardContent>
               </Card>
             </motion.div>
           </div>
