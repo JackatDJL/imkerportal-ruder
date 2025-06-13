@@ -54,13 +54,13 @@ export default tseslint.config(
   // This is the crucial part for Prettier integration:
   // It adds the 'prettier/prettier' rule and disables conflicting ESLint rules.
   // It MUST come last to ensure it overrides other formatting rules.
-  eslintPluginPrettierRecommended,
+  // eslintPluginPrettierRecommended,
   {
     linterOptions: {
       reportUnusedDisableDirectives: true,
     },
     rules: {
-      "prettier/prettier": "off",
+      // "prettier/prettier": "off",
     },
   },
 );

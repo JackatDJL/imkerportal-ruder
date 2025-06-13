@@ -1,149 +1,120 @@
-"use client"
+"use client";
 
-import { api } from "#convex/api"
-import { result, type apiError } from "~/server/utility"
-import { convexQuery } from "@convex-dev/react-query"
-import { useQuery } from "@tanstack/react-query"
-import { Button } from "~/components/ui/button"
-import { ArrowLeft, Plus, Save } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card"
-import { useRouter } from "next/navigation"
-import { motion } from "motion/react"
-import { useForm, type SubmitHandler, Controller } from "react-hook-form"
-import type { Doc } from "#convex/dataModel"
-import { useEffect, useRef } from "react"
-import Choicebox from "~/components/choicebox"
-import { ComboBox } from "~/components/combobox"
-import { create } from "zustand"
+import { api } from "#convex/api";
+import { result } from "~/server/utility";
+import { convexQuery } from "@convex-dev/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "~/components/ui/button";
+import { ArrowLeft, Plus, Save } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "motion/react";
+import { useForm, type SubmitHandler, Controller } from "react-hook-form";
+import type { Doc } from "#convex/dataModel";
+import { useEffect, useState } from "react";
+import Choicebox from "~/components/choicebox";
+import { ComboBox } from "~/components/combobox";
+import { toast } from "sonner";
+import { Input } from "~/components/ui/input";
+import { Skeleton } from "~/components/ui/skeleton";
+import { Label } from "~/components/ui/label";
 
-// --- Consolidated Zustand Store ---
-interface ApiState {
-  colonyApiResponse?: Doc<"colonies">[]
-  identifierApiResponse?: string
-  colonyApiError?: apiError
-  identifierApiError?: apiError
-}
-
-interface ApiActions {
-  setApiResponse: (field: "colonyApi" | "identifierApi", response: Doc<"colonies">[] | string) => void
-  clearApiResponse: (field: "colonyApi" | "identifierApi") => void
-  setError: (field: "colonyApi" | "identifierApi", error: apiError) => void
-  clearError: (field: "colonyApi" | "identifierApi") => void
-}
-
-const useApiAndErrorStore = create<ApiState & ApiActions>((set) => ({
-  colonyApiResponse: undefined,
-  identifierApiResponse: undefined,
-  colonyApiError: undefined,
-  identifierApiError: undefined,
-
-  setApiResponse: (field, response) => {
-    set((state) => ({
-      ...state,
-      [`${field}ApiResponse`]: response,
-      [`${field}ApiError`]: undefined, // Clear error on successful response
-    }))
-  },
-  clearApiResponse: (field) => {
-    set((state) => ({
-      ...state,
-      [`${field}ApiResponse`]: undefined,
-    }))
-  },
-  setError: (field, error) => {
-    set((state) => ({
-      ...state,
-      [`${field}ApiError`]: error,
-      [`${field}ApiResponse`]: undefined, // Clear response on error
-    }))
-  },
-  clearError: (field) => {
-    set((state) => ({
-      ...state,
-      [`${field}ApiError`]: undefined,
-    }))
-  },
-}))
-
-type FormData = typeof api.hive.components.createComponent._args.data
+type FormData = typeof api.hive.components.createComponent._args.data;
 
 export default function NewComponent() {
-  const router = useRouter()
-
-  const { setApiResponse, setError } = useApiAndErrorStore()
+  const router = useRouter();
 
   const { data: coloniesQueryResult, isLoading: coloniesLoading } = useQuery(
     convexQuery(api.hive.colonies.listColonies, {}),
-  )
-  const colonies = result(coloniesQueryResult)
+  );
+  const coloniesResult = result(coloniesQueryResult);
 
-  const { handleSubmit, watch, setValue, control, getValues } = useForm<FormData>({
+  const { handleSubmit, watch, setValue, control } = useForm<FormData>({
     defaultValues: {
       type: "Zarge",
       identifier: "",
+      assignedColony: "_lager",
     },
-  })
+  });
 
-  const selectedComponentType = watch("type")
+  const selectedComponentType = watch("type");
 
-  const { data: componentIdentifierQueryResult, isLoading: componentIdentifierLoading } = useQuery(
+  const {
+    data: componentIdentifierQueryResult,
+    isLoading: componentIdentifierLoading,
+  } = useQuery(
     convexQuery(api.hive.components.generateComponentIdentifier, {
       componentType: selectedComponentType,
     }),
-  )
-  const componentIdentifier = result(componentIdentifierQueryResult)
+  );
+  const componentIdentifier = result(componentIdentifierQueryResult);
 
-  const lastSetIdentifierRef = useRef<string | null>(null)
+  // Error Handling
+  const [colonies, setColonies] = useState<Doc<"colonies">[]>([]);
 
-  // Handle colony data/errors
   useEffect(() => {
-    if (colonies.isOk() && colonies.value.data) {
-      setApiResponse("colonyApi", colonies.value.data)
-    } else if (colonies.isErr()) {
-      setError("colonyApi", colonies.error)
+    if (coloniesLoading) {
+      return;
     }
-  }, [colonies, setApiResponse, setError])
-
-  useEffect(() => {
-    if (componentIdentifier) {
-      const newIdentifierData = componentIdentifier.isOk() ? componentIdentifier.value.data : undefined
-      const errorData = componentIdentifier.isErr() ? componentIdentifier.error : undefined
-
-      if (newIdentifierData !== undefined) {
-        const currentFormIdentifier = getValues("identifier")
-
-        if (newIdentifierData !== currentFormIdentifier && newIdentifierData !== lastSetIdentifierRef.current) {
-          setApiResponse("identifierApi", newIdentifierData)
-          setValue("identifier", newIdentifierData, { shouldValidate: true })
-          lastSetIdentifierRef.current = newIdentifierData
-        }
-      } else if (errorData !== undefined) {
-        setError("identifierApi", errorData)
-        const currentFormIdentifier = getValues("identifier")
-        if (currentFormIdentifier !== "") {
-          setValue("identifier", "", { shouldValidate: true })
-          lastSetIdentifierRef.current = null
-        }
-      }
+    if (coloniesResult.isErr()) {
+      console.error("Error fetching colonies:", coloniesResult.error);
+      toast.error(
+        `Fehler beim Laden der Völker: ${coloniesResult.error.message}`,
+      );
+      setColonies([]);
     }
-  }, [componentIdentifier, setValue, setError, setApiResponse, getValues])
+    if (coloniesResult.isOk()) {
+      setColonies(coloniesResult.value.data ?? []);
+    }
+  }, [coloniesLoading, coloniesResult]);
 
   useEffect(() => {
-    lastSetIdentifierRef.current = null
-  }, [selectedComponentType])
+    if (componentIdentifierLoading) {
+      return;
+    }
+    if (componentIdentifier.isOk()) {
+      setValue("identifier", componentIdentifier.value.data ?? "");
+    } else if (componentIdentifier.isErr()) {
+      console.error(
+        "Error generating component identifier:",
+        componentIdentifier.error,
+      );
+      toast.error(
+        `Fehler beim Generieren der Komponentennummer: ${componentIdentifier.error.message}`,
+      );
+    }
+  }, [
+    coloniesLoading,
+    componentIdentifier,
+    componentIdentifierLoading,
+    setValue,
+  ]);
 
   const onSubmit: SubmitHandler<FormData> = (data) => {
-    console.log("Form Data Submitted:", data)
+    console.log("Form Data Submitted:", data);
+    if (data.assignedColony === "_lager") {
+      data.assignedColony = undefined;
+    }
+
     // You would typically call a Convex mutation here, e.g.:
     // createComponentMutation.mutate(data);
-  }
-
-  const overallLoading = coloniesLoading || componentIdentifierLoading
+  };
 
   return (
     <div className="flex-1 space-y-6 p-6">
       <div className="relative mb-6 flex items-center justify-center max-sm:hidden">
-        <Button variant="ghost" size="sm" onClick={() => router.back()} className="absolute left-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.back()}
+          className="absolute left-0"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zurück
         </Button>
@@ -155,7 +126,10 @@ export default function NewComponent() {
         <div className="flex grow items-center justify-center">
           <div className="grid w-5/6 gap-6 md:w-4/5 xl:w-3/4">
             {/* Component Type Selection */}
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
               <Card>
                 <CardContent className="space-y-4 max-xl:hidden">
                   <Controller
@@ -219,8 +193,11 @@ export default function NewComponent() {
             </motion.div>
 
             {/* Basic Information */}
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-              <Card>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <Card className="w-1/2 max-sm:w-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Plus className="h-5 w-5" />
@@ -229,15 +206,76 @@ export default function NewComponent() {
                   <CardDescription>Identifikation und Standort</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Example of a registered input field */}
-                  {/* <div>
-                    <Label htmlFor="usedSince">Genutzt seit</Label>
-                    <Input id="usedSince" type="date" {...register("usedSince")} />
-                  </div> */}
-                  Test
+                  {componentIdentifierLoading ? (
+                    <Skeleton className="h-12 w-full" />
+                  ) : (
+                    <Controller
+                      name="identifier"
+                      control={control}
+                      render={({ field }) => (
+                        <div>
+                          <Label htmlFor="identifier">Volks-ID</Label>
+                          <Input
+                            id="identifier"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="z.B. f001, f002..."
+                          />
+                        </div>
+                      )}
+                    />
+                  )}
+
+                  {coloniesLoading ? (
+                    <Skeleton className="h-12 w-full" />
+                  ) : (
+                    <Controller
+                      name="assignedColony"
+                      control={control}
+                      render={({ field }) => (
+                        <div>
+                          <Label htmlFor="colony">Volk</Label>
+                          <ComboBox
+                            options={[
+                              { value: "_lager", label: "Nicht Zugewiesen" },
+                              ...colonies.map((colony) => ({
+                                value: colony.identifier,
+                                label: colony.identifier,
+                              })),
+                            ]}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </div>
+                      )}
+                    />
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
+
+            {/* Zarge Specific Information */}
+            <AnimatePresence>
+              {selectedComponentType === "Zarge" && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                >
+                  <Card className="w-1/2 max-sm:w-full">
+                    <CardHeader>
+                      <CardTitle>Größendaten</CardTitle>
+                      <CardDescription>
+                        Zusätzliche Details für Zargen
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>tt</div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -253,5 +291,5 @@ export default function NewComponent() {
         </div>
       </form>
     </div>
-  )
+  );
 }

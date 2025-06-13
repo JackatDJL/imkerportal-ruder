@@ -330,7 +330,7 @@ function result<T>(
       message: "Not found",
       error: null,
       _internal: { reported: false, reportable: false },
-    });
+    }).mapErr(orReport) as Err<never, apiError>;
     // Attach deconstruct to the actual neverthrow Err instance
     const finalResult = baseResult as Err<never, apiError> & {
       deconstruct: () => apiError & { content(): undefined };
@@ -353,7 +353,7 @@ function result<T>(
       message: "Invalid input: _type property missing and not undefined/null",
       error: null,
       _internal: { reported: false, reportable: false },
-    });
+    }).mapErr(orReport) as Err<never, apiError>;
     const finalResult = baseResult as Err<never, apiError> & {
       deconstruct: () => apiError & { content(): undefined };
     };
@@ -369,7 +369,7 @@ function result<T>(
   if (input._type === "err") {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _type, ...errorData } = input; // errorData is of type apiError
-    const baseResult = err(errorData);
+    const baseResult = err(errorData).mapErr(orReport) as Err<never, apiError>;
     // Attach deconstruct
     const finalResult = baseResult as Err<never, apiError> & {
       deconstruct: () => apiError & { content(): undefined };
@@ -386,7 +386,10 @@ function result<T>(
   if (input._type === "ok") {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { _type, ...valueData } = input; // valueData is apiResponse<T>
-    const baseResult = ok(valueData as apiResponse<T>);
+    const baseResult = ok(valueData as apiResponse<T>).map(Log) as Ok<
+      apiResponse<T>,
+      never
+    >;
     // Attach deconstruct
     const finalResult = baseResult as Ok<apiResponse<T>, never> & {
       deconstruct: () => apiResponse<T> & { content(): T };
@@ -407,7 +410,7 @@ function result<T>(
     message: "Unknown error or unhandled input type in result function",
     error: null,
     _internal: { reported: false, reportable: true },
-  });
+  }).mapErr(orReport) as Err<never, apiError>;
   const finalFallbackResult = fallbackBaseResult as Err<never, apiError> & {
     deconstruct: () => apiError & { content(): undefined };
   };
