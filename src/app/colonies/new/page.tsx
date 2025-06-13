@@ -12,13 +12,7 @@ import {
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+import { ComboBox } from "~/components/combobox";
 import { Skeleton } from "~/components/ui/skeleton";
 import { ArrowLeft, Save, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -27,7 +21,6 @@ import { motion } from "motion/react";
 import posthog from "posthog-js";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "#convex/api";
-import type { Doc } from "#convex/dataModel";
 import { result } from "~/server/utility";
 
 export default function NewColony() {
@@ -137,7 +130,67 @@ export default function NewColony() {
                     <Label htmlFor="hiveType" id="hiveType">
                       Beutentyp
                     </Label>
-                    <Select
+                    <ComboBox
+                      value={
+                        formData.hiveType?.type ?? "Deutsch Normalmaß (DNM)"
+                      }
+                      onChange={(value: string | undefined) => {
+                        if (value === "Sonstiges") {
+                          setFormData({
+                            ...formData,
+                            hiveType: { type: "Sonstiges", description: "" },
+                          });
+                        } else if (
+                          [
+                            "Dadant US",
+                            "Dadant Blatt",
+                            "Zander",
+                            "Langstroth",
+                            "Deutsch Normalmaß (DNM)",
+                            "MiniPlus",
+                            "Warré",
+                            "Einraumbeute",
+                          ].includes(value ?? "")
+                        ) {
+                          setFormData({
+                            ...formData,
+                            hiveType:
+                              value === "Sonstiges"
+                                ? { type: "Sonstiges", description: "" }
+                                : {
+                                    type: value! as
+                                      | "Dadant US"
+                                      | "Dadant Blatt"
+                                      | "Zander"
+                                      | "Langstroth"
+                                      | "Deutsch Normalmaß (DNM)"
+                                      | "MiniPlus"
+                                      | "Warré"
+                                      | "Einraumbeute",
+                                  },
+                          });
+                        }
+                      }}
+                      options={[
+                        { value: "Dadant US", label: "Dadant US" },
+                        { value: "Dadant Blatt", label: "Dadant Blatt" },
+                        { value: "Zander", label: "Zander" },
+                        { value: "Langstroth", label: "Langstroth" },
+                        {
+                          value: "Deutsch Normalmaß (DNM)",
+                          label: "Deutsch Normalmaß (DNM)",
+                        },
+                        { value: "MiniPlus", label: "MiniPlus" },
+                        { value: "Warré", label: "Warré" },
+                        { value: "Einraumbeute", label: "Einraumbeute" },
+                        { value: "Sonstiges", label: "Sonstiges" },
+                      ]}
+                      placeholder="Beutentyp auswählen"
+                      className="w-full"
+                      aria-label="Beutentyp auswählen"
+                      aria-describedby="hiveType"
+                    />
+                    {/* <Select
                       defaultValue={
                         formData.hiveType?.type ?? "Deutsch Normalmaß (DNM)"
                       }
@@ -174,7 +227,7 @@ export default function NewColony() {
                         </SelectItem>
                         <SelectItem value="Sonstiges">Sonstiges</SelectItem>
                       </SelectContent>
-                    </Select>
+                    </Select> */}
                     {formData.hiveType?.type === "Sonstiges" && (
                       <Input
                         type="text"

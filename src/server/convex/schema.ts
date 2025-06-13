@@ -133,10 +133,10 @@ export const hiveComponentDataTypes = z.object({
     z.literal("DNM (Deutsch Normalmaß)"),
     z.literal("Langstroth"),
     z.literal("MiniPlus"),
-    z.object({
-      type: z.literal("Sonstiges"), // Custom frame size
-      description: z.string(), // Custom frame size description
-    }),
+    // z.object({
+    //   type: z.literal("Sonstiges"), // Custom frame size
+    //   description: z.string(), // Custom frame size description
+    // }),
   ]),
   maxFrames: z.number().int().positive().optional(), // Maximum number of frames this component can hold
   currentlyHolding: z.number().int().nonnegative().optional(), // Currently occupied frames
@@ -541,7 +541,7 @@ export default defineSchema({
 
   hiveComponents: defineTable(zodToConvex(hiveComponentTypes))
     .index("by_identifier", ["identifier"])
-    .index("by_asignedColony", ["asignedColony"])
+    .index("by_assignedColony", ["assignedColony"])
     .index("by_type", ["type"]),
 
   // IV. Behandlungen & Fütterung (Treatments & Feeding)

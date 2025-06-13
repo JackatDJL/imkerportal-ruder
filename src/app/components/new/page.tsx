@@ -5,7 +5,7 @@ import { result } from "~/server/utility";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Plus, Save } from "lucide-react";
+import { ArrowLeft, Plus, Save, Move } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -35,13 +35,17 @@ export default function NewComponent() {
   );
   const coloniesResult = result(coloniesQueryResult);
 
-  const { handleSubmit, watch, setValue, control } = useForm<FormData>({
-    defaultValues: {
-      type: "Zarge",
-      identifier: "",
-      assignedColony: "_lager",
-    },
-  });
+  const { handleSubmit, watch, setValue, control, register } =
+    useForm<FormData>({
+      defaultValues: {
+        type: "Zarge",
+        identifier: "",
+        assignedColony: "_lager",
+        frameSize: "DNM (Deutsch Normalmaß)",
+        maxFrames: 12,
+        currentlyHolding: 12,
+      },
+    });
 
   const selectedComponentType = watch("type");
 
@@ -124,11 +128,18 @@ export default function NewComponent() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Form Content */}
         <div className="flex grow items-center justify-center">
-          <div className="grid w-5/6 gap-6 md:w-4/5 xl:w-3/4">
+          <div
+            className="grid w-5/6 gap-6 md:w-4/5 xl:w-3/4"
+            style={{
+              gridTemplateColumns: "repeat(auto-fill, minmax(600px, 1fr))",
+              gridGap: "1rem",
+            }}
+          >
             {/* Component Type Selection */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
+              style={{ gridColumn: "1 / -1" }}
             >
               <Card>
                 <CardContent className="space-y-4 max-xl:hidden">
@@ -197,7 +208,7 @@ export default function NewComponent() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
             >
-              <Card className="w-1/2 max-sm:w-full">
+              <Card className="w-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Plus className="h-5 w-5" />
@@ -236,6 +247,7 @@ export default function NewComponent() {
                         <div>
                           <Label htmlFor="colony">Volk</Label>
                           <ComboBox
+                            id="colony"
                             options={[
                               { value: "_lager", label: "Nicht Zugewiesen" },
                               ...colonies.map((colony) => ({
@@ -262,15 +274,59 @@ export default function NewComponent() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                 >
-                  <Card className="w-1/2 max-sm:w-full">
+                  <Card className="w-full">
                     <CardHeader>
-                      <CardTitle>Größendaten</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Move className="h-5 w-5" />
+                        Größendaten
+                      </CardTitle>
                       <CardDescription>
                         Zusätzliche Details für Zargen
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div>tt</div>
+                      <Controller
+                        name="frameSize"
+                        control={control}
+                        render={({ field }) => (
+                          <div>
+                            <Label htmlFor="frameSize">Rähmchenmaß</Label>
+                            <ComboBox
+                              id="frameSize"
+                              options={[
+                                { value: "Zander", label: "Zander" },
+                                { value: "Dadant Brut", label: "Dadant Brut" },
+                                {
+                                  value: "Dadant Honig",
+                                  label: "Dadant Honig",
+                                },
+                                {
+                                  value: "DNM (Deutsch Normalmaß)",
+                                  label: "DNM (Deutsch Normalmaß)",
+                                },
+                                { value: "Langstroth", label: "Langstroth" },
+                                { value: "MiniPlus", label: "MiniPlus" },
+                              ]}
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          </div>
+                        )}
+                      />
+                      <div>
+                        <Label htmlFor="maxFrames">
+                          Maximale Rähmchenanzahl
+                        </Label>
+                        <Input
+                          id="maxFrames"
+                          type="number"
+                          placeholder="z.B. 10, 12, 14..."
+                          {...register("maxFrames", {
+                            valueAsNumber: true,
+                          })}
+                          className="w-full"
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
