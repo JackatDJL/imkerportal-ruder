@@ -35,6 +35,7 @@ export interface CalendarTodayProps {
   fromDate?: Date;
   toDate?: Date;
   showOutsideDays?: boolean;
+  fckTheCard?: boolean; // Removes the Card "Border" wrapper
 }
 
 export function CalendarToday({
@@ -43,6 +44,7 @@ export function CalendarToday({
   cardDescription = "Datum auswählen",
   showTodayButton = true,
   todayButtonLabel = "Heute",
+  fckTheCard = false,
   ...props
 }: CalendarTodayProps) {
   const [date, setDate] = React.useState<Date | undefined>(props.selected);
@@ -69,7 +71,7 @@ export function CalendarToday({
   };
 
   return (
-    <Card id={id}>
+    <Card id={id} className={fckTheCard ? "border-none" : undefined}>
       <CardHeader>
         <CardTitle>{cardTitle}</CardTitle>
         <CardDescription>{cardDescription}</CardDescription>

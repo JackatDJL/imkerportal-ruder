@@ -5,7 +5,7 @@ import { result } from "~/server/utility";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Plus, Save, Move } from "lucide-react";
+import { ArrowLeft, Plus, Save, Move, RulerDimensionLine } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -362,7 +362,8 @@ export default function NewComponent() {
               <Card className="w-full">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {/* <Plus className="h-5 w-5" /> */}# NAME THIS CATEGORY
+                    <RulerDimensionLine className="h-5 w-5" />
+                    Zustand und Nutzung
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -415,6 +416,34 @@ export default function NewComponent() {
                           disabled={(date) => date > new Date()}
                           showTodayButton
                           cardTitle="Letzte Reinigung"
+                          cardDescription="Nur vergangene Daten erlaubt"
+                        />
+                      </div>
+                    )}
+                  />
+
+                  <Controller
+                    name="usedSince"
+                    control={control}
+                    render={({ field }) => (
+                      <div>
+                        <Label htmlFor="usedSince">In Benutzung seit</Label>
+                        <DatePicker
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                          onChange={(date) => {
+                            if (date instanceof Date) {
+                              field.onChange(date.toISOString().slice(0, 10));
+                            } else {
+                              field.onChange("");
+                            }
+                          }}
+                          mode="single"
+                          toDate={new Date()}
+                          disabled={(date) => date > new Date()}
+                          showTodayButton
+                          cardTitle="In Benutzung seit"
                           cardDescription="Nur vergangene Daten erlaubt"
                         />
                       </div>

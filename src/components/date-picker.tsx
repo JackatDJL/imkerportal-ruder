@@ -131,7 +131,7 @@ export function DatePicker({
             (mode === "multiple" && Array.isArray(date) && date.length === 0)
           }
           className={cn(
-            "w-[280px] justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
+            "w-[17.5rem] justify-start text-left font-normal data-[empty=true]:text-muted-foreground",
             className,
           )}
         >
@@ -140,11 +140,12 @@ export function DatePicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn("w-auto p-0", popoverClassName)}
-        align="start"
+        className={cn("w-[17.5rem] p-0", popoverClassName)}
+        align="center"
       >
         {mode === "single" && showTodayButton ? (
           <CalendarToday
+            fckTheCard
             selected={date as Date | undefined}
             onSelect={(
               d: Date | Date[] | DateRange | undefined,
