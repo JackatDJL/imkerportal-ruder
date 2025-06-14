@@ -101,8 +101,8 @@ export function ComboBox<T extends string | number = string>({
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
-                  key={String(option.value)}
-                  value={String(option.value)}
+                  key={String(option.label)}
+                  value={String(option.label)}
                   onSelect={() =>
                     !option.disabled && handleSelect(option.value)
                   }

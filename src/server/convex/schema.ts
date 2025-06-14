@@ -146,7 +146,6 @@ export const hiveComponentDataTypes = z.object({
     .string()
     .regex(/^new|\d{4}-\d{2}-\d{2}$/)
     .optional(), // YYYY-MM-DD format or "new"
-  location: z.string().optional(), // Optional location for the component
   notes: z.string().optional(), // Optional notes about the component
 });
 

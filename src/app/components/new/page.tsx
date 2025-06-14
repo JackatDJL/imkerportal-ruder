@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { Input } from "~/components/ui/input";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Label } from "~/components/ui/label";
+import { DatePicker } from "~/components/date-picker";
 
 type FormData = typeof api.hive.components.createComponent._args.data;
 
@@ -44,6 +45,10 @@ export default function NewComponent() {
         frameSize: "DNM (Deutsch Normalmaß)",
         maxFrames: 12,
         currentlyHolding: 12,
+        condition: "new",
+        lastCleaned: new Date().toISOString(),
+        usedSince: new Date().toISOString(),
+        notes: "",
       },
     });
 
@@ -327,11 +332,100 @@ export default function NewComponent() {
                           className="w-full"
                         />
                       </div>
+                      <div>
+                        <Label htmlFor="currentlyHolding">
+                          Aktuell gehaltene Rähmchen
+                        </Label>
+                        <Input
+                          id="currentlyHolding"
+                          type="number"
+                          placeholder="z.B. 10, 12, 14..."
+                          {...register("currentlyHolding", {
+                            valueAsNumber: true,
+                          })}
+                          className="w-full"
+                        />
+                      </div>
                     </CardContent>
                   </Card>
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* // OPTIONAL COLONY == SELECTED // POSITION // TODO: DESIGN COMPONENT */}
+
+            {/* // condition + lastCleaned + usedSince */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <Card className="w-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {/* <Plus className="h-5 w-5" /> */}# NAME THIS CATEGORY
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Controller
+                    name="condition"
+                    control={control}
+                    render={({ field }) => (
+                      <div>
+                        <Label htmlFor="condition">Zustand</Label>
+                        <ComboBox
+                          id="condition"
+                          options={[
+                            { value: "new", label: "Neu" },
+                            { value: "good", label: "Gut" },
+                            { value: "used", label: "Gebraucht" },
+                            { value: "worn", label: "Abgenutzt" },
+                            {
+                              value: "needs repair",
+                              label: "Reparaturbedürftig",
+                            },
+                            { value: "disinfected", label: "Desinfiziert" },
+                            { value: "wax residue", label: "Wachsreste" },
+                          ]}
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </div>
+                    )}
+                  />
+
+                  <Controller
+                    name="lastCleaned"
+                    control={control}
+                    render={({ field }) => (
+                      <div>
+                        <Label htmlFor="lastCleaned">Letzte Reinigung</Label>
+                        <DatePicker
+                          value={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                          onChange={(date) => {
+                            if (date instanceof Date) {
+                              field.onChange(date.toISOString().slice(0, 10));
+                            } else {
+                              field.onChange("");
+                            }
+                          }}
+                          mode="single"
+                          toDate={new Date()}
+                          disabled={(date) => date > new Date()}
+                          showTodayButton
+                          cardTitle="Letzte Reinigung"
+                          cardDescription="Nur vergangene Daten erlaubt"
+                        />
+                      </div>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Additional Information */}
+            {/* // notes */}
           </div>
         </div>
 
