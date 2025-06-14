@@ -93,7 +93,7 @@ export const hiveComponentBaseType = z.object({
       z.string().startsWith("k"), // Königinnenabsperrgitter
     )
     .or(
-      z.string().startsWith("f"), // Futterraum
+      z.string().startsWith("fd"), // Futterraum
     ),
   type: z
     .union([
@@ -105,7 +105,8 @@ export const hiveComponentBaseType = z.object({
       z.literal("Futterraum"),
     ])
     .default("Zarge"),
-  _internal: z
+  orderIndex: z.number().int().optional(), // New field for explicit ordering
+  internalData: z // Changed from _internal
     .object({
       virtualPosition: z
         .union([
@@ -174,14 +175,15 @@ export const hiveComponentTypes = z.discriminatedUnion("type", [
     .object({
       identifier: z.string().startsWith("d"),
       type: z.literal("Deckel"),
-      _internal: z.object({
+      internalData: z.object({
+        // Changed from _internal
         virtualPosition: z.object({
           type: z.literal("forceTop"),
           forceFromTop: z.literal(0),
         }),
       }),
     })
-    .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+    .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
     .merge(
       hiveComponentDataTypes.omit({
         frameSize: true,
@@ -219,14 +221,15 @@ export const hiveComponentTypes = z.discriminatedUnion("type", [
     .object({
       identifier: z.string().startsWith("fd"),
       type: z.literal("Futterraum"),
-      _internal: z.object({
+      internalData: z.object({
+        // Changed from _internal
         virtualPosition: z.object({
           type: z.literal("forceTop"),
           forceFromTop: z.literal(1),
         }),
       }),
     })
-    .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+    .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
     .merge(
       hiveComponentDataTypes.omit({
         frameSize: true,

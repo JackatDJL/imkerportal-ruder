@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { cn } from "~/lib/utils"
+import { useState } from "react";
+import { cn } from "~/lib/utils";
 
 export interface ChoiceboxOption<T = string> {
-  value: T
-  label: string
-  description?: string
-  disabled?: boolean
+  value: T;
+  label: string;
+  description?: string;
+  disabled?: boolean;
 }
 
 export interface ChoiceboxProps<T> {
-  options: ChoiceboxOption<T>[]
-  value?: T
-  defaultValue?: T
-  onChange?: ((value: T) => void) | React.Dispatch<React.SetStateAction<T>>
-  name?: string
-  className?: string
-  optionClassName?: string
-  selectedClassName?: string
-  disabledClassName?: string
-  direction?: "row" | "column"
-  size?: "sm" | "md" | "lg"
-  variant?: "default" | "card" | "minimal"
+  options: ChoiceboxOption<T>[];
+  value?: T;
+  defaultValue?: T;
+  onChange?: ((value: T) => void) | React.Dispatch<React.SetStateAction<T>>;
+  name?: string;
+  className?: string;
+  optionClassName?: string;
+  selectedClassName?: string;
+  disabledClassName?: string;
+  direction?: "row" | "column";
+  size?: "sm" | "md" | "lg";
+  variant?: "default" | "card" | "minimal";
 }
 
 export default function Choicebox<T>({
@@ -39,43 +39,58 @@ export default function Choicebox<T>({
   size = "md",
   variant = "default",
 }: ChoiceboxProps<T>) {
-  const [internalValue, setInternalValue] = useState<T | undefined>((defaultValue ?? options[0]?.value))
+  const [internalValue, setInternalValue] = useState<T | undefined>(
+    defaultValue ?? options[0]?.value,
+  );
 
-  const currentValue = value ?? internalValue
+  const currentValue = value ?? internalValue;
 
   const handleChange = (optionValue: T) => {
     if (value === undefined) {
-      setInternalValue(optionValue as T | undefined)
+      setInternalValue(optionValue as T | undefined);
     }
-    onChange?.(optionValue)
-  }
+    onChange?.(optionValue);
+  };
 
-  const baseClasses = cn("flex gap-2", direction === "row" ? "flex-row flex-wrap" : "flex-col", className)
+  const baseClasses = cn(
+    "flex gap-2",
+    direction === "row" ? "flex-row flex-wrap" : "flex-col",
+    className,
+  );
 
-  const getOptionClasses = (option: ChoiceboxOption<T>, isSelected: boolean) => {
+  const getOptionClasses = (
+    option: ChoiceboxOption<T>,
+    isSelected: boolean,
+  ) => {
     const sizeClasses = {
       sm: "p-2 text-sm",
       md: "p-3 text-base",
       lg: "p-4 text-lg",
-    }
+    };
 
     const variantClasses = {
       default: cn(
         "border rounded-lg cursor-pointer transition-all duration-200",
         "hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
-        isSelected ? "border-primary bg-primary/5 text-primary" : "border-border bg-background hover:bg-muted/50",
+        isSelected
+          ? "border-primary bg-primary/5 text-primary"
+          : "border-border bg-background hover:bg-muted/50",
       ),
       card: cn(
         "border rounded-xl cursor-pointer transition-all duration-200 shadow-sm",
         "hover:shadow-md hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
-        isSelected ? "border-primary bg-primary/5 text-primary shadow-md" : "border-border bg-card hover:bg-muted/30",
+        isSelected
+          ? "border-primary bg-primary/5 text-primary shadow-md"
+          : "border-border bg-card hover:bg-muted/30",
       ),
       minimal: cn(
         "rounded-md cursor-pointer transition-all duration-200",
         "hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20",
-        isSelected ? "bg-primary text-primary-foreground" : "bg-transparent hover:bg-muted/50",
+        isSelected
+          ? "bg-primary text-primary-foreground"
+          : "bg-transparent hover:bg-muted/50",
       ),
-    }
+    };
 
     return cn(
       sizeClasses[size],
@@ -87,13 +102,13 @@ export default function Choicebox<T>({
         ),
       isSelected && selectedClassName,
       optionClassName,
-    )
-  }
+    );
+  };
 
   return (
     <div className={baseClasses} role="radiogroup">
       {options.map((option) => {
-        const isSelected = currentValue === option.value
+        const isSelected = currentValue === option.value;
 
         return (
           <label
@@ -102,8 +117,8 @@ export default function Choicebox<T>({
             tabIndex={option.disabled ? -1 : 0}
             onKeyDown={(e) => {
               if ((e.key === "Enter" || e.key === " ") && !option.disabled) {
-                e.preventDefault()
-                handleChange(option.value)
+                e.preventDefault();
+                handleChange(option.value);
               }
             }}
           >
@@ -117,27 +132,36 @@ export default function Choicebox<T>({
               disabled={option.disabled}
               className="sr-only"
             />
-            <div className="flex items-center justify-between w-full">
+            <div className="flex w-full items-center justify-between">
               <div className="flex-1">
                 <div className="font-medium">{option.label}</div>
                 {option.description && (
-                  <div className={cn("text-sm mt-1", isSelected ? "text-primary/70" : "text-muted-foreground")}>
+                  <div
+                    className={cn(
+                      "mt-1 text-sm",
+                      isSelected ? "text-primary/70" : "text-muted-foreground",
+                    )}
+                  >
                     {option.description}
                   </div>
                 )}
               </div>
               <div
                 className={cn(
-                  "w-4 h-4 rounded-full border-2 flex items-center justify-center ml-3",
-                  isSelected ? "border-primary bg-primary" : "border-muted-foreground/30",
+                  "ml-3 flex h-4 w-4 items-center justify-center rounded-full border-2",
+                  isSelected
+                    ? "border-primary bg-primary"
+                    : "border-muted-foreground/30",
                 )}
               >
-                {isSelected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                {isSelected && (
+                  <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+                )}
               </div>
             </div>
           </label>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

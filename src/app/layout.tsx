@@ -96,7 +96,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <Head>
-      <script
+        <script
           crossOrigin="anonymous"
           src="//unpkg.com/react-scan/dist/auto.global.js"
         />

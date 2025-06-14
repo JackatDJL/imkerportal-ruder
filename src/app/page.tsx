@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { Authenticated, useMutation, useQuery } from "convex/react";
@@ -6,6 +7,7 @@ import Link from "next/link";
 import { GoogleOneTap, SignedOut } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
 import { dark } from "@clerk/themes";
+import { WorkInProgressPage } from "../components/notifier";
 
 export default function Home() {
   const theme = useTheme();
@@ -36,11 +38,7 @@ function Content() {
   // const addNumber = useMutation(api.myFunctions.addNumber);
 
   // if (viewer === undefined || numbers === undefined) {
-  return (
-    <div className="mx-auto">
-      <p>loading... (consider a loading skeleton)</p>
-    </div>
-  );
+  return <WorkInProgressPage />;
   // }
 
   // return (

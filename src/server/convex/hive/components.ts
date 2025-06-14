@@ -2,7 +2,7 @@ import { type apiObjectType, ok, err } from "#utility";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
 import { z } from "zod";
 import { internalQuery, mutation, query } from "#convex/server";
-import { type Id, type Doc } from "#convex/dataModel";
+import type { Id, Doc } from "#convex/dataModel";
 import { internal } from "#convex/api";
 import {
   hiveComponentBaseType,
@@ -40,25 +40,38 @@ export const listColonyComponents = query({
     }
 
     let components: Doc<"hiveComponents">[] = [];
-    switch (args.colonyId ? "colonyId" : "colonyIdentifier") {
-      case "colonyId":
-        components = await ctx.db
-          .query("hiveComponents")
-          .filter((q) => q.eq(q.field("_id"), args.colonyId!.toString()))
-          .collect();
-        break;
-      case "colonyIdentifier":
-        components = await ctx.db
-          .query("hiveComponents")
-          .filter((q) => q.eq(q.field("identifier"), args.colonyIdentifier))
-          .collect();
-        break;
+    if (args.colonyId) {
+      components = await ctx.db
+        .query("hiveComponents")
+        .filter((q) => q.eq(q.field("assignedColony"), args.colonyId))
+        .collect();
+    } else if (args.colonyIdentifier) {
+      // First, find the colony ID from the identifier
+      const colony = await ctx.db
+        .query("colonies")
+        .filter((q) => q.eq(q.field("identifier"), args.colonyIdentifier))
+        .first();
+
+      if (!colony) {
+        return err((s, t) => ({
+          status: s.NotFound,
+          type: t.NotFound,
+          error: "colony_not_found",
+          message: `Colony with identifier ${args.colonyIdentifier} not found`,
+        })).object();
+      }
+
+      components = await ctx.db
+        .query("hiveComponents")
+        .filter((q) => q.eq(q.field("assignedColony"), colony._id))
+        .collect();
     }
+
     if (components.length === 0) {
-      return err((s, t) => ({
-        status: s.NotFound,
-        type: t.NotFound,
-        error: "colony_components_not_found",
+      return ok((s, t) => ({
+        status: s.Success,
+        type: t.SuccessNoData,
+        data: [],
         message: `No components found for colony with ID ${"colonyId" in args ? args.colonyId : args.colonyIdentifier}`,
       })).object();
     }
@@ -204,14 +217,14 @@ export const createComponentType = z.object({
         identifier: z.string().startsWith("z").optional(),
         type: z.literal("Zarge"),
       })
-      .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+      .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
       .merge(hiveComponentDataTypes),
     z
       .object({
         identifier: z.string().startsWith("b").optional(),
         type: z.literal("Boden"),
       })
-      .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+      .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
       .merge(
         hiveComponentDataTypes.omit({
           frameSize: true,
@@ -223,14 +236,15 @@ export const createComponentType = z.object({
       .object({
         identifier: z.string().startsWith("d").optional(),
         type: z.literal("Deckel"),
-        _internal: z.object({
+        internalData: z.object({
+          // Changed from _internal
           virtualPosition: z.object({
             type: z.literal("forceTop"),
             forceFromTop: z.literal(0),
           }),
         }),
       })
-      .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+      .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
       .merge(
         hiveComponentDataTypes.omit({
           frameSize: true,
@@ -243,7 +257,7 @@ export const createComponentType = z.object({
         identifier: z.string().startsWith("o").optional(),
         type: z.literal("One Way Gate"),
       })
-      .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+      .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
       .merge(
         hiveComponentDataTypes.omit({
           frameSize: true,
@@ -256,7 +270,7 @@ export const createComponentType = z.object({
         identifier: z.string().startsWith("k").optional(),
         type: z.literal("Königinnenabsperrgitter"),
       })
-      .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+      .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
       .merge(
         hiveComponentDataTypes.omit({
           frameSize: true,
@@ -268,14 +282,15 @@ export const createComponentType = z.object({
       .object({
         identifier: z.string().startsWith("fd").optional(),
         type: z.literal("Futterraum"),
-        _internal: z.object({
+        internalData: z.object({
+          // Changed from _internal
           virtualPosition: z.object({
             type: z.literal("forceTop"),
             forceFromTop: z.literal(1),
           }),
         }),
       })
-      .merge(hiveComponentBaseType.omit({ type: true, _internal: true }))
+      .merge(hiveComponentBaseType.omit({ type: true, internalData: true })) // Changed from _internal
       .merge(
         hiveComponentDataTypes.omit({
           frameSize: true,
@@ -294,7 +309,9 @@ export const createComponent = mutation({
     if (!args.data.identifier) {
       identifier = await ctx.runQuery(
         internal.hive.components.internalGenerateComponentIdentifier,
-        { componentType: args.data.type },
+        {
+          componentType: args.data.type,
+        },
       );
     } else {
       identifier = args.data.identifier;
@@ -308,9 +325,40 @@ export const createComponent = mutation({
       }
     }
 
+    const newComponentOrderIndex = args.data.orderIndex;
+    const assignedColonyId = args.data.assignedColony;
+
+    // If an orderIndex is provided and a colony is assigned, adjust existing components
+    if (newComponentOrderIndex !== undefined && assignedColonyId) {
+      const existingColonyComponents = await ctx.db
+        .query("hiveComponents")
+        .filter((q) => q.eq(q.field("assignedColony"), assignedColonyId))
+        .collect();
+
+      // Sort existing components by their current orderIndex to ensure correct re-indexing
+      const sortedExistingComponents = [...existingColonyComponents].sort(
+        (a, b) => {
+          const aIndex = a.orderIndex ?? Number.POSITIVE_INFINITY;
+          const bIndex = b.orderIndex ?? Number.POSITIVE_INFINITY;
+          return aIndex - bIndex;
+        },
+      );
+
+      // Increment orderIndex for components that will be shifted down
+      const updates = sortedExistingComponents.map(async (comp) => {
+        const currentOrderIndex =
+          comp.orderIndex ?? sortedExistingComponents.length; // Default to end if not set
+        if (currentOrderIndex >= newComponentOrderIndex) {
+          await ctx.db.patch(comp._id, { orderIndex: currentOrderIndex + 1 });
+        }
+      });
+      await Promise.all(updates);
+    }
+
     const helper: z.infer<typeof hiveComponentTypes> = {
       ...args.data,
       identifier,
+      // orderIndex is already part of args.data due to the merge with hiveComponentBaseType
     };
 
     const response = await ctx.db.insert("hiveComponents", helper);
@@ -319,6 +367,33 @@ export const createComponent = mutation({
       status: s.Success,
       type: t.Success,
       data: response,
+    })).object();
+  },
+});
+
+export const updateComponentOrder = mutation({
+  args: zodToConvex(
+    z.object({
+      orderedIdentifiers: z.array(z.string()), // Array of component identifiers in the new order
+    }),
+  ),
+  handler: async (ctx, args): apiObjectType<boolean> => {
+    const { orderedIdentifiers } = args;
+    const updates = orderedIdentifiers.map(async (identifier, index) => {
+      const component = await ctx.db
+        .query("hiveComponents")
+        .filter((q) => q.eq(q.field("identifier"), identifier))
+        .first();
+      if (component) {
+        await ctx.db.patch(component._id, { orderIndex: index });
+      }
+    });
+    await Promise.all(updates);
+    return ok((s, t) => ({
+      status: s.Success,
+      type: t.Success,
+      data: true,
+      message: "Component order updated successfully",
     })).object();
   },
 });

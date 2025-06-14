@@ -1,11 +1,27 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, type SubmitHandler, Controller } from "react-hook-form";
+
 import { api } from "#convex/api";
+import type { Doc, Id } from "#convex/dataModel"; // Import Id
 import { result } from "~/server/utility";
-import { convexQuery } from "@convex-dev/react-query";
-import { useQuery } from "@tanstack/react-query";
+
+import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query"; // Import useMutation
+
+import { motion, AnimatePresence } from "motion/react";
+import { toast } from "sonner";
+
+import {
+  ArrowLeft,
+  Plus,
+  Save,
+  Move,
+  RulerIcon as RulerDimensionLine,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
-import { ArrowLeft, Plus, Save, Move, RulerDimensionLine } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -13,18 +29,14 @@ import {
   CardTitle,
   CardDescription,
 } from "~/components/ui/card";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "motion/react";
-import { useForm, type SubmitHandler, Controller } from "react-hook-form";
-import type { Doc } from "#convex/dataModel";
-import { useEffect, useState } from "react";
-import Choicebox from "~/components/choicebox";
-import { ComboBox } from "~/components/combobox";
-import { toast } from "sonner";
 import { Input } from "~/components/ui/input";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Label } from "~/components/ui/label";
+import Choicebox from "~/components/choicebox";
+import { ComboBox } from "~/components/combobox";
 import { DatePicker } from "~/components/date-picker";
+import HiveStackPlacement from "~/components/hive-stack-placement";
+// import { NotifierDialog } from "~/components/notifier"; // Removed NotifierDialog import
 
 type FormData = typeof api.hive.components.createComponent._args.data;
 
@@ -36,6 +48,15 @@ export default function NewComponent() {
   );
   const coloniesResult = result(coloniesQueryResult);
 
+  const [colonies, setColonies] = useState<Doc<"colonies">[]>([]);
+  const [selectedColonyId, setSelectedColonyId] = useState<
+    Id<"colonies"> | undefined
+  >(undefined);
+  const [showPlacementSection, setShowPlacementSection] = useState(false); // Changed from showPlacementModal
+  const [placementOrderIndex, setPlacementOrderIndex] = useState<number | null>(
+    null,
+  );
+
   const { handleSubmit, watch, setValue, control, register } =
     useForm<FormData>({
       defaultValues: {
@@ -46,13 +67,38 @@ export default function NewComponent() {
         maxFrames: 12,
         currentlyHolding: 12,
         condition: "new",
-        lastCleaned: new Date().toISOString(),
-        usedSince: new Date().toISOString(),
+        // Format initial date values to match schema expectations
+        lastCleaned: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+        usedSince: `${String(new Date().getDate()).padStart(2, "0")}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${new Date().getFullYear()}`, // DD-MM-YYYY
         notes: "",
       },
     });
 
   const selectedComponentType = watch("type");
+  const assignedColonyIdentifier = watch("assignedColony"); // Watch the identifier string
+
+  // Fetch components for the selected colony when assignedColony changes
+  const {
+    data: colonyComponentsQueryResponse,
+    // isLoading: colonyComponentsLoading,
+  } = useQuery({
+    ...convexQuery(api.hive.components.listColonyComponents, {
+      colonyIdentifier:
+        assignedColonyIdentifier !== "_lager"
+          ? assignedColonyIdentifier
+          : undefined,
+    }),
+    enabled:
+      assignedColonyIdentifier !== "_lager" &&
+      assignedColonyIdentifier !== undefined,
+  });
+  const colonyComponentsQueryResult = result(colonyComponentsQueryResponse);
+
+  const colonyComponents: Doc<"hiveComponents">[] =
+    colonyComponentsQueryResult?.isOk() &&
+    colonyComponentsQueryResult.value.data
+      ? colonyComponentsQueryResult.value.data
+      : [];
 
   const {
     data: componentIdentifierQueryResult,
@@ -63,9 +109,6 @@ export default function NewComponent() {
     }),
   );
   const componentIdentifier = result(componentIdentifierQueryResult);
-
-  // Error Handling
-  const [colonies, setColonies] = useState<Doc<"colonies">[]>([]);
 
   useEffect(() => {
     if (coloniesLoading) {
@@ -98,21 +141,153 @@ export default function NewComponent() {
         `Fehler beim Generieren der Komponentennummer: ${componentIdentifier.error.message}`,
       );
     }
-  }, [
-    coloniesLoading,
-    componentIdentifier,
-    componentIdentifierLoading,
-    setValue,
-  ]);
+  }, [componentIdentifier, componentIdentifierLoading, setValue]);
 
-  const onSubmit: SubmitHandler<FormData> = (data) => {
+  // Update selectedColonyId when assignedColony changes
+  useEffect(() => {
+    if (assignedColonyIdentifier && assignedColonyIdentifier !== "_lager") {
+      const foundColony = colonies.find(
+        (c) => c.identifier === assignedColonyIdentifier,
+      );
+      if (foundColony) {
+        setSelectedColonyId(foundColony._id);
+      } else {
+        setSelectedColonyId(undefined);
+      }
+    } else {
+      setSelectedColonyId(undefined);
+    }
+  }, [assignedColonyIdentifier, colonies]);
+
+  const createComponentMutation = useMutation({
+    mutationFn: useConvexMutation(api.hive.components.createComponent),
+  });
+
+  const onSubmit: SubmitHandler<FormData> = async (data) => {
     console.log("Form Data Submitted:", data);
-    if (data.assignedColony === "_lager") {
-      data.assignedColony = undefined;
+    let finalAssignedColony: Id<"colonies"> | undefined = undefined;
+
+    if (data.assignedColony && data.assignedColony !== "_lager") {
+      const colony = colonies.find((c) => c.identifier === data.assignedColony);
+      if (colony) {
+        finalAssignedColony = colony._id;
+      } else {
+        toast.error("Selected colony not found.");
+        return;
+      }
     }
 
-    // You would typically call a Convex mutation here, e.g.:
-    // createComponentMutation.mutate(data);
+    // Format dates correctly
+    // lastCleaned: YYYY-MM-DD or "new"
+    const formattedLastCleaned = data.lastCleaned
+      ? new Date(data.lastCleaned).toISOString().slice(0, 10)
+      : undefined;
+
+    // usedSince: DD-MM-YYYY
+    const usedSinceDate = data.usedSince ? new Date(data.usedSince) : undefined;
+    const formattedUsedSince = usedSinceDate
+      ? `${String(usedSinceDate.getDate()).padStart(2, "0")}-${String(
+          usedSinceDate.getMonth() + 1,
+        ).padStart(2, "0")}-${usedSinceDate.getFullYear()}`
+      : "";
+
+    // Base data common to all component types
+    const baseData = {
+      identifier: data.identifier,
+      type: data.type,
+      assignedColony: finalAssignedColony,
+      condition: data.condition,
+      lastCleaned: formattedLastCleaned,
+      usedSince: formattedUsedSince,
+      notes: data.notes,
+      orderIndex: placementOrderIndex ?? undefined,
+    };
+
+    let componentData: FormData;
+
+    // Construct data based on selected component type to match discriminated union schema
+    switch (data.type) {
+      case "Zarge":
+        componentData = {
+          ...baseData,
+          type: "Zarge",
+          frameSize: data.frameSize,
+          maxFrames: data.maxFrames,
+          currentlyHolding: data.currentlyHolding,
+        };
+        break;
+      case "Boden":
+        componentData = {
+          ...baseData,
+          type: "Boden",
+          // frameSize, maxFrames, currentlyHolding are omitted for Boden
+        };
+        break;
+      case "Deckel":
+        componentData = {
+          ...baseData,
+          type: "Deckel",
+          internalData: {
+            // Changed from _internal
+            virtualPosition: {
+              type: "forceTop",
+              forceFromTop: 0,
+            },
+          },
+          // frameSize, maxFrames, currentlyHolding are omitted for Deckel
+        };
+        break;
+      case "One Way Gate":
+        componentData = {
+          ...baseData,
+          type: "One Way Gate",
+          // frameSize, maxFrames, currentlyHolding are omitted
+        };
+        break;
+      case "Königinnenabsperrgitter":
+        componentData = {
+          ...baseData,
+          type: "Königinnenabsperrgitter",
+          // frameSize, maxFrames, currentlyHolding are omitted
+        };
+        break;
+      case "Futterraum":
+        componentData = {
+          ...baseData,
+          type: "Futterraum",
+          internalData: {
+            // Changed from _internal
+            virtualPosition: {
+              type: "forceTop",
+              forceFromTop: 1,
+            },
+          },
+          // frameSize, maxFrames, currentlyHolding are omitted
+        };
+        break;
+      default:
+        // Fallback or error handling for unknown types
+        toast.error("Unbekannter Komponententyp ausgewählt.");
+        return;
+    }
+
+    const response = await createComponentMutation.mutateAsync({
+      data: componentData,
+    });
+    const resultData = result(response);
+    if (resultData.isOk()) {
+      toast.success("Komponente erfolgreich erstellt!");
+      router.push("/components/" + data.identifier);
+    } else {
+      toast.error(
+        `Fehler beim Erstellen der Komponente: ${resultData.error.message}`,
+      );
+    }
+  };
+
+  const handlePlacementSelection = (index: number | null) => {
+    setPlacementOrderIndex(index);
+    setShowPlacementSection(false); // Close the section after selection
   };
 
   return (
@@ -261,11 +436,39 @@ export default function NewComponent() {
                               })),
                             ]}
                             value={field.value}
-                            onChange={field.onChange}
+                            onChange={(value: unknown) => {
+                              field.onChange(value);
+                              setPlacementOrderIndex(null); // Reset placement when colony changes
+                              setShowPlacementSection(false); // Hide placement section
+                            }}
                           />
                         </div>
                       )}
                     />
+                  )}
+
+                  {selectedColonyId && (
+                    <div className="space-y-2">
+                      <Label htmlFor="placement">Platzierung im Volk</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() =>
+                          setShowPlacementSection(!showPlacementSection)
+                        }
+                        className="w-full"
+                      >
+                        {placementOrderIndex !== null
+                          ? `Position: ${placementOrderIndex}`
+                          : "Position auswählen"}
+                      </Button>
+                      {placementOrderIndex !== null && (
+                        <p className="text-sm text-muted-foreground">
+                          Komponente wird an Position {placementOrderIndex}{" "}
+                          eingefügt.
+                        </p>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -352,7 +555,25 @@ export default function NewComponent() {
               )}
             </AnimatePresence>
 
-            {/* // OPTIONAL COLONY == SELECTED // POSITION // TODO: DESIGN COMPONENT */}
+            {/* Inline Placement Card */}
+            <AnimatePresence>
+              {selectedColonyId && showPlacementSection && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ gridColumn: "1 / -1" }} // Span full width
+                >
+                  <HiveStackPlacement
+                    colony={colonies.find((c) => c._id === selectedColonyId)!}
+                    components={colonyComponents}
+                    onPlacementSelected={handlePlacementSelection}
+                    initialOrderIndex={placementOrderIndex}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* // condition + lastCleaned + usedSince */}
             <motion.div
