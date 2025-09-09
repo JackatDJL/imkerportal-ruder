@@ -10,6 +10,8 @@ import { useState, useEffect } from "react";
 interface HiveStackPlacementProps {
   colony: Doc<"colonies">;
   components: Doc<"hiveComponents">[];
+  // IMPORTANT: Add newComponentType prop
+  newComponentType: Doc<"hiveComponents">["type"];
   onPlacementSelected: (orderIndex: number | null) => void;
   initialOrderIndex: number | null;
 }
@@ -17,17 +19,37 @@ interface HiveStackPlacementProps {
 export default function HiveStackPlacement({
   colony,
   components,
+  newComponentType, // Destructure new prop
   onPlacementSelected,
   initialOrderIndex,
 }: HiveStackPlacementProps) {
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(
     initialOrderIndex,
   );
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // Update internal state if initialOrderIndex changes from parent
   useEffect(() => {
     setSelectedOrderIndex(initialOrderIndex);
+    if (initialOrderIndex !== null) {
+      // If there's an initial index, we are "editing" a placement,
+      // so the component should visually be "out" for potential re-selection.
+      // This state is handled by VisualHiveStack's selectedPlacementIndex.
+    }
   }, [initialOrderIndex]);
+
+  const handleConfirm = () => {
+    setIsConfirming(true);
+    // The actual call to onPlacementSelected will happen after the animation
+    // in VisualHiveStack, triggered by onPlacementAnimationComplete.
+    // For now, we'll rely on a timeout or a direct call if animation callback is too complex initially.
+    // onPlacementSelected(selectedOrderIndex); // This would be immediate
+  };
+
+  const handleAnimationComplete = () => {
+    onPlacementSelected(selectedOrderIndex);
+    setIsConfirming(false); // Reset confirming state
+  };
 
   return (
     <Card className="w-full">
@@ -43,26 +65,36 @@ export default function HiveStackPlacement({
           colony={colony}
           components={components}
           placementMode={true}
-          onPlacementSelect={setSelectedOrderIndex}
-          selectedPlacementIndex={selectedOrderIndex} // Pass selected index for highlighting
-          interactive={false} // Disable general interaction in placement mode
-          liveEdit={false} // Disable live editing in placement mode
+          placingComponentType={newComponentType} // Pass the type of the component being placed
+          onPlacementSelect={(index) => {
+            setSelectedOrderIndex(index);
+            setIsConfirming(false); // If user selects a new slot, reset confirmation
+          }}
+          selectedPlacementIndex={selectedOrderIndex}
+          interactive={false}
+          liveEdit={false}
           showIdsInComponents={true}
           showComponentLabels={true}
+          isConfirmingPlacement={isConfirming} // Pass confirming state
+          onPlacementAnimationComplete={handleAnimationComplete} // Callback for when animation finishes
         />
         <div className="flex gap-2">
           <Button
-            onClick={() => onPlacementSelected(selectedOrderIndex)}
+            onClick={handleConfirm}
             type="button"
-            disabled={selectedOrderIndex === null}
+            disabled={selectedOrderIndex === null || isConfirming}
           >
             <Check className="mr-2 h-4 w-4" />
-            Bestätigen
+            {isConfirming ? "Platziere..." : "Bestätigen"}
           </Button>
           <Button
             variant="outline"
             type="button"
-            onClick={() => onPlacementSelected(null)}
+            onClick={() => {
+              onPlacementSelected(null);
+              setIsConfirming(false);
+            }}
+            disabled={isConfirming}
           >
             <X className="mr-2 h-4 w-4" />
             Abbrechen

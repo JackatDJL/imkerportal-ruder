@@ -1,39 +1,45 @@
+// queen-excluder.tsx
 import { themeColors } from "../hive-stack";
 
 const QueenExcluderSVG = ({
   height = 10,
-  fill = themeColors.Koeniginnenabspehrgitter,
+  fill = themeColors.Koeniginnenabspehrgitter, // Color for the frame
   isHovered = false,
 }) => (
   <g>
+    {/* Frame */}
     <rect
       x="10"
       y="0"
       width="130"
       height={height}
       fill={fill}
-      stroke="#696969"
-      strokeWidth="1"
-      rx="1"
+      rx="2" // Rounded corners
     />
-    {Array.from({ length: 25 }).map((_, i) => (
-      <line
-        key={`v${i}`}
-        x1={12 + i * 5}
-        y1="1"
-        x2={12 + i * 5}
-        y2={height - 1}
-        stroke="#D3D3D3"
-        strokeWidth="0.5"
-      />
-    ))}
-    <line
+    {/* Simplified Grid - fewer, slightly thicker lines */}
+    {Array.from({ length: 10 }).map(
+      (
+        _,
+        i, // Reduced from 25
+      ) => (
+        <line
+          key={`v${i}`}
+          x1={15 + i * 12} // Adjusted spacing
+          y1="1"
+          x2={15 + i * 12}
+          y2={height - 1}
+          stroke={themeColors.DetailLight} // Lighter color for grid lines
+          strokeWidth="1" // Slightly thicker
+        />
+      ),
+    )}
+    <line // Optional: one central horizontal line
       x1="11"
       y1={height / 2}
       x2="139"
       y2={height / 2}
-      stroke="#D3D3D3"
-      strokeWidth="0.5"
+      stroke={themeColors.DetailLight}
+      strokeWidth="1"
     />
     {isHovered && (
       <rect

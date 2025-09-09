@@ -1,3 +1,4 @@
+// one-way-gate.tsx
 import { themeColors } from "../hive-stack";
 
 const OneWayGateSVG = ({
@@ -6,21 +7,20 @@ const OneWayGateSVG = ({
   isHovered = false,
 }) => (
   <g>
+    {/* Main Panel */}
     <rect
       x="10"
       y="0"
       width="130"
       height={height}
       fill={fill}
-      stroke="#576879"
-      strokeWidth="1"
-      rx="1"
+      rx="2" // Rounded corners
     />
-    <path d="M 30 4 L 40 7.5 L 30 11 Z" fill="#D3D3D3" />
-    <path d="M 70 4 L 80 7.5 L 70 11 Z" fill="#D3D3D3" />
-    <path d="M 110 4 L 120 7.5 L 110 11 Z" fill="#D3D3D3" />
-    <rect x="45" y="5" width="20" height="5" fill="#405060" rx="1" />
-    <rect x="85" y="5" width="20" height="5" fill="#405060" rx="1" />
+    {/* Simplified Gates/Arrows - made them lighter for contrast */}
+    <path d="M 30 4 L 40 7.5 L 30 11 Z" fill={themeColors.DetailLight} />
+    <path d="M 70 4 L 80 7.5 L 70 11 Z" fill={themeColors.DetailLight} />
+    <path d="M 110 4 L 120 7.5 L 110 11 Z" fill={themeColors.DetailLight} />
+
     {isHovered && (
       <rect
         x="8"

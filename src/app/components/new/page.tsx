@@ -69,7 +69,7 @@ export default function NewComponent() {
         condition: "new",
         // Format initial date values to match schema expectations
         lastCleaned: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-        usedSince: `${String(new Date().getDate()).padStart(2, "0")}-${String(new Date().getMonth() + 1).padStart(2, "0")}-${new Date().getFullYear()}`, // DD-MM-YYYY
+        usedSince: new Date().toISOString().slice(0, 10),
         notes: "",
       },
     });
@@ -568,6 +568,7 @@ export default function NewComponent() {
                   <HiveStackPlacement
                     colony={colonies.find((c) => c._id === selectedColonyId)!}
                     components={colonyComponents}
+                    newComponentType={selectedComponentType}
                     onPlacementSelected={handlePlacementSelection}
                     initialOrderIndex={placementOrderIndex}
                   />

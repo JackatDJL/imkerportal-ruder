@@ -1,80 +1,78 @@
+// boden.tsx
 import { themeColors } from "../hive-stack";
 
 const BodenSVG = ({
-  height = 30,
+  height = 30, // Main visual height, actual might be slightly more with landing board
   fill = themeColors.Boden,
   isHovered = false,
-}) => (
-  <g>
-    <rect
-      x="10"
-      y="0"
-      width="130"
-      height={height - 5}
-      fill={fill}
-      stroke="#4A4A4A"
-      strokeWidth="1"
-      rx="2"
-    />
-    <rect
-      x="5"
-      y={height - 8}
-      width="140"
-      height="6"
-      fill="#8B4513"
-      stroke="#654321"
-      strokeWidth="1"
-      rx="1"
-    />
-    <rect x="60" y={height - 8} width="30" height="4" fill="#2C1810" rx="1" />
-    <rect
-      x="15"
-      y="5"
-      width="120"
-      height="10"
-      fill="#4A4A4A"
-      stroke="#2C1810"
-      strokeWidth="1"
-      rx="1"
-    />
-    {Array.from({ length: 12 }).map((_, i) => (
-      <line
-        key={`v${i}`}
-        x1={20 + i * 10}
-        y1="6"
-        x2={20 + i * 10}
-        y2="14"
-        stroke="#2C1810"
-        strokeWidth="0.5"
-      />
-    ))}
-    {Array.from({ length: 4 }).map((_, i) => (
-      <line
-        key={`h${i}`}
-        x1="20"
-        y1={7 + i * 2}
-        x2="130"
-        y2={7 + i * 2}
-        stroke="#2C1810"
-        strokeWidth="0.5"
-      />
-    ))}
-    <rect x="20" y={height - 3} width="4" height="8" fill="#4A4A4A" />
-    <rect x="126" y={height - 3} width="4" height="8" fill="#4A4A4A" />
-    {isHovered && (
+}) => {
+  const mainBoxHeight = height - 8; // Adjusted for a distinct landing board
+  const landingBoardHeight = 6;
+  const landingBoardY = mainBoxHeight - 2; // Slightly overlapping for a connected look
+  const feetHeight = 5;
+
+  return (
+    <g>
+      {/* Main Body */}
       <rect
-        x="8"
-        y="-2"
-        width="134"
-        height={height + 7}
-        fill="none"
-        stroke="#3B82F6"
-        strokeWidth="2"
-        rx="4"
-        className="animate-pulse"
+        x="10"
+        y="0"
+        width="130"
+        height={mainBoxHeight}
+        fill={fill}
+        rx="3" // Rounded corners
       />
-    )}
-  </g>
-);
+      {/* Landing Board */}
+      <rect
+        x="5"
+        y={landingBoardY}
+        width="140"
+        height={landingBoardHeight + 2} // Making it a bit thicker
+        fill={themeColors.DetailDark} // Darker accent for landing board
+        rx="2"
+      />
+      {/* Simplified Entrance */}
+      <rect
+        x="55"
+        y={mainBoxHeight - 10} // Positioned on the main body, above landing board
+        width="40"
+        height="6"
+        fill={themeColors.DetailDark} // Darker slot
+        rx="1"
+      />
+      {/* Simplified Feet */}
+      <rect
+        x="15"
+        y={mainBoxHeight}
+        width="10"
+        height={feetHeight}
+        fill={fill}
+        rx="1"
+      />
+      <rect
+        x="125"
+        y={mainBoxHeight}
+        width="10"
+        height={feetHeight}
+        fill={fill}
+        rx="1"
+      />
+
+      {isHovered && (
+        <rect
+          x="3" // Adjusted to encompass the entire new design
+          y="-2"
+          width="144"
+          height={height + 7} // Adjusted for new proportions
+          fill="none"
+          stroke="#3B82F6"
+          strokeWidth="2"
+          rx="4"
+          className="animate-pulse"
+        />
+      )}
+    </g>
+  );
+};
 
 export default BodenSVG;
