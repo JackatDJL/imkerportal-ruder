@@ -1,5 +1,5 @@
 import { internalQuery, mutation, query } from "#convex/server";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
 import { type Id, type Doc } from "#convex/dataModel";
 import { internal } from "#convex/api";

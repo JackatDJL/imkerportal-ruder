@@ -1,6 +1,6 @@
 import { type apiObjectType, ok, err } from "#utility";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { internalQuery, mutation, query } from "#convex/server";
 import type { Id, Doc } from "#convex/dataModel";
 import { internal } from "#convex/api";

@@ -2,12 +2,14 @@
   "compilerOptions": {
     "moduleDetection": "force",
     "verbatimModuleSyntax": true,
-
     "noUncheckedIndexedAccess": true,
     "checkJs": true,
-
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -17,7 +19,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "plugins": [
       {
@@ -25,12 +27,24 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "~/*": ["./src/*"],
-      "#convex/*": ["./src/server/convex/_generated/*"],
-      "#env": ["./src/env.js"],
-      "#flags": ["./src/server/flags.ts"],
-      "#utility": ["./src/server/utility.ts"]
+      "@/*": [
+        "./*"
+      ],
+      "~/*": [
+        "./src/*"
+      ],
+      "#convex/*": [
+        "./src/server/convex/_generated/*"
+      ],
+      "#env": [
+        "./src/env.js"
+      ],
+      "#flags": [
+        "./src/server/flags.ts"
+      ],
+      "#utility": [
+        "./src/server/utility.ts"
+      ]
     }
   },
   "include": [
@@ -41,5 +55,7 @@
     "**/*.js",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

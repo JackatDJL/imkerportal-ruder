@@ -1,7 +1,7 @@
 // convex/schema.ts
 import { defineSchema, defineTable } from "convex/server";
 import { zodToConvex, zid } from "convex-helpers/server/zod";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const strength = z
   .tuple([
